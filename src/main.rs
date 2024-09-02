@@ -1,34 +1,85 @@
 use std::env;
 use std::fs;
+use std::process::ExitCode;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        eprintln!("Usage: {} tokenize <filename>", args[0]);
-        return;
-    }
+use owo_colors::OwoColorize;
 
-    let command = &args[1];
-    let filename = &args[2];
+fn main() -> ExitCode {
+    let arguments: Vec<String> = env::args().skip(1).collect();
 
-    match command.as_str() {
-        "tokenize" => {
-            // You can use print statements as follows for debugging, they'll be visible when running tests.
-            eprintln!("Logs from the program will appear here!");
-
-            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
-                eprintln!("Failed to read file {}", filename);
-                String::new()
-            });
-
-            if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
+    let command = match Command::try_from(arguments) {
+        Ok(command) => command,
+        Err(error) => {
+            if let CommandParseError::UnknownCommand(command) = error {
+                print_error(&format!("unknown command `{}`", command));
             } else {
-                println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
+                print_error(&format!(
+                    "invalid arguments, run `{}` to view supported commands",
+                    "bagel help".bold()
+                ));
+            }
+            return ExitCode::FAILURE;
+        }
+    };
+
+    match command {
+        Command::Help => {
+            println!("{}", "SUPPORTED COMMANDS".bold().underline());
+            println!("{} (prints this message)", "bagel help".italic());
+            println!(
+                "{} {} (tokenizes input Lox file and prints result to standard output)",
+                "bagel tokenize".italic(),
+                "<file_name>".bold(),
+            );
+        }
+        Command::Tokenize { filename } => {
+            let file_contents = match fs::read_to_string(&filename) {
+                Ok(contents) => contents,
+                Err(_) => {
+                    print_error(&format!("failed to read file `{}`", filename));
+                    return ExitCode::FAILURE;
+                }
+            };
+
+            if file_contents.is_empty() {
+                println!("EOF  null")
             }
         }
-        _ => {
-            eprintln!("Unknown command: {}", command);
+    }
+
+    ExitCode::SUCCESS
+}
+
+fn print_error(message: &str) {
+    eprintln!("{}{} {message}", "ERROR".bold().red(), ":".bold(),);
+}
+
+#[derive(Debug)]
+enum Command {
+    Help,
+    Tokenize { filename: String },
+}
+
+impl TryFrom<Vec<String>> for Command {
+    type Error = CommandParseError;
+
+    fn try_from(arguments: Vec<String>) -> Result<Self, Self::Error> {
+        let mut arguments = arguments.into_iter();
+
+        let command = arguments.next().ok_or(CommandParseError::Other)?;
+        match command.as_str() {
+            "help" => Ok(Command::Help),
+            "tokenize" => {
+                let filename = arguments.next().ok_or(CommandParseError::Other)?;
+
+                Ok(Command::Tokenize { filename })
+            }
+            _ => Err(CommandParseError::UnknownCommand(command)),
         }
     }
+}
+
+enum CommandParseError {
+    UnknownCommand(String),
+    Other,
 }
