@@ -1,6 +1,9 @@
 help:
     just --list
 
+build:
+    cargo build
+
 push:
     git push
     just push-cc
