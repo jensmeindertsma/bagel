@@ -7,7 +7,7 @@ use interpreter::{Interpreter, InterpreterError, ScannerError};
 use owo_colors::OwoColorize;
 use std::io::{IsTerminal, Read};
 use std::process::{self, ExitCode};
-use std::{env, io};
+use std::{env, fs, io};
 
 fn main() -> ExitCode {
     let arguments = env::args().skip(1);
@@ -35,7 +35,34 @@ fn main() -> ExitCode {
         Command::Help => {
             println!("{}", "HELP IS COMING!!!!".bold().underline())
         }
-        Command::Tokenize { filename } => {}
+        Command::Tokenize { filename } => {
+            let contents = match fs::read_to_string(filename) {
+                Ok(c) => c,
+                Err(error) => {
+                    let message = match error.kind() {
+                        io::ErrorKind::NotFound => "file not found",
+                        _ => "unknown error reading file",
+                    };
+
+                    print_error(message, Color::On);
+                    return ExitCode::FAILURE;
+                }
+            };
+
+            let interpreter = Interpreter::default();
+            let tokens = match interpreter.scan(&contents) {
+                Ok(tokens) => tokens,
+                Err(error) => {
+                    print_error(&format!("scanner failure: {error:?}"), Color::On);
+                    return ExitCode::FAILURE;
+                }
+            };
+
+            for token in tokens {
+                println!("{token}")
+            }
+            println!("EOF  null")
+        }
     }
 
     ExitCode::SUCCESS
@@ -88,7 +115,7 @@ fn handle_piped_stdin() -> process::ExitCode {
         }
     }
 
-    return ExitCode::SUCCESS;
+    ExitCode::SUCCESS
 }
 
 fn print_error(message: &str, enable_color: Color) {
