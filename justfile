@@ -4,6 +4,9 @@ help:
 build:
     cargo build
 
+run *ARGS:
+    cargo run {{ARGS}}
+
 push:
     git push
     just push-cc
