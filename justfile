@@ -4,8 +4,14 @@ help:
 build:
     cargo build
 
+clean:
+    cargo clean
+
 run *ARGS:
     cargo run {{ARGS}}
+
+test:
+    cargo nextest run
 
 push:
     git push

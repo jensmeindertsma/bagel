@@ -26,6 +26,7 @@
           devShells.default = mkShell {
             packages = [
               alejandra
+              cargo-nextest
               just
               nil
               rust-analyzer-unwrapped

@@ -1,64 +1,100 @@
-use std::io::{BufRead, Write};
-use std::process::ExitCode;
+mod command;
+mod interpreter;
+mod repl;
+
+use command::{Command, TryFromIterator};
+use interpreter::{Interpreter, InterpreterError, ScannerError};
+use owo_colors::OwoColorize;
+use std::io::{IsTerminal, Read};
+use std::process::{self, ExitCode};
 use std::{env, io};
 
-use owo_colors::OwoColorize;
-
-const PROMPT: &str = "《🥯》";
-
 fn main() -> ExitCode {
-    let mut arguments = env::args().skip(1);
+    let arguments = env::args().skip(1);
 
-    let command = arguments.next();
-
-    if command.is_none() {
-        println!(
-            "{}",
-            format!(
-                "Welcome, thanks for using Bagel v{}",
-                env!("CARGO_PKG_VERSION")
-            )
-            .bold()
-            .yellow(),
-        );
-
-        // TODO: before starting REPL, check if there is already source being fed into standard input,
-        // handle that instead if it is the case.
-
-        let mut buffer = String::new();
-
-        loop {
-            print!("{}", PROMPT.bold().green());
-            io::stdout().flush().unwrap();
-
-            if io::stdin().lock().read_line(&mut buffer).is_ok() {
-                print_error("please try again");
-                continue;
-            };
-
-            let input = buffer.trim();
-
-            print_output(input);
-
-            // TODO: first check for any repl-related input commands:
-            // - quit, multi line stuff?
-            // send off input to interpreter here, figure out a way to allow
-            // multiple statements to be entered on one line (semicolon?
-            // or backslash ? or custom command to enter multi line, or use of EOF)
-
-            buffer.clear()
+    if arguments.len() < 1 {
+        let stdin_is_pipe = !io::stdin().is_terminal();
+        if stdin_is_pipe {
+            return handle_piped_stdin();
         }
+
+        // Without any arguments, we boot up the REPL.
+        repl::start_interactive_shell();
+        return ExitCode::SUCCESS;
     }
 
-    // TODO: parse and handle different commands.
+    let command = match Command::try_from_iterator(arguments) {
+        Ok(c) => c,
+        Err(error) => {
+            print_error(&format!("invalid command: {error:?}"), Color::On);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    match command {
+        Command::Help => {
+            println!("{}", "HELP IS COMING!!!!".bold().underline())
+        }
+        Command::Tokenize { filename } => {}
+    }
 
     ExitCode::SUCCESS
 }
 
-fn print_output(output: &str) {
-    println!("{}{}", PROMPT.bold().blue(), output.bold().blue());
+#[derive(PartialEq)]
+enum Color {
+    On,
+    Off,
 }
 
-fn print_error(message: &str) {
-    eprintln!("{}{}", PROMPT.bold().red(), message.bold().red());
+fn handle_piped_stdin() -> process::ExitCode {
+    let do_color_output = match io::stdout().is_terminal() {
+        true => Color::On,
+        false => Color::Off,
+    };
+
+    let mut buffer = Vec::new();
+    if io::stdin().read_to_end(&mut buffer).is_err() {
+        print_error("failed to read from standard input", do_color_output);
+        return ExitCode::FAILURE;
+    };
+
+    let input = match String::from_utf8(buffer) {
+        Ok(string) => string,
+        Err(_) => {
+            print_error(
+                "received invalid UTF-8 over standard input",
+                do_color_output,
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let interpreter = Interpreter::default();
+    let output = interpreter.interpret(&input);
+
+    match output {
+        Ok(result) => println!("{result}"),
+        Err(interpreter_error) => {
+            print_error(
+                match interpreter_error {
+                    InterpreterError::Scanner(scanner_error) => match scanner_error {
+                        ScannerError::Unknown => "scanner failed for unknown reason",
+                    },
+                },
+                do_color_output,
+            );
+            return ExitCode::FAILURE;
+        }
+    }
+
+    return ExitCode::SUCCESS;
+}
+
+fn print_error(message: &str, enable_color: Color) {
+    if enable_color == Color::On {
+        println!("{}{} {}", "error".bold().red(), ":".bold(), message.bold())
+    } else {
+        println!("error: {}", message)
+    }
 }
