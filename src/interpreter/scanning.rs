@@ -15,7 +15,17 @@ impl<'a> Iterator for Scanner<'a> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        None
+        if self.input.is_empty() {
+            if self.index == 0 {
+                self.index += 1;
+
+                return Some(Ok(Token::Eof));
+            } else {
+                return None;
+            }
+        }
+
+        Some(Err(ScannerError::Unknown))
     }
 }
 
@@ -26,7 +36,7 @@ pub enum ScannerError {
 
 #[derive(Debug)]
 pub enum Token {
-    EOF,
+    Eof,
 }
 
 impl fmt::Display for Token {
@@ -35,7 +45,7 @@ impl fmt::Display for Token {
             f,
             "{}",
             match self {
-                Self::EOF => "EOF  null",
+                Self::Eof => "EOF  null",
             }
         )
     }

@@ -2,7 +2,7 @@ mod command;
 mod interpreter;
 mod repl;
 
-use command::{Command, TryFromIterator};
+use command::{Command, CommandParseError, TryFromIterator};
 use interpreter::{Interpreter, InterpreterError, ScannerError};
 use owo_colors::OwoColorize;
 use std::io::{IsTerminal, Read};
@@ -26,7 +26,16 @@ fn main() -> ExitCode {
     let command = match Command::try_from_iterator(arguments) {
         Ok(c) => c,
         Err(error) => {
-            print_error(&format!("invalid command: {error:?}"), Color::On);
+            print_error(
+                &match error {
+                    CommandParseError::MissingCommand => "missing command".to_owned(),
+                    CommandParseError::MissingFilename => "missing filename".to_owned(),
+                    CommandParseError::UnknownCommand(command) => {
+                        format!("unknown command `{command}`")
+                    }
+                },
+                Color::On,
+            );
             return ExitCode::FAILURE;
         }
     };
@@ -61,7 +70,6 @@ fn main() -> ExitCode {
             for token in tokens {
                 println!("{token}")
             }
-            println!("EOF  null")
         }
     }
 
