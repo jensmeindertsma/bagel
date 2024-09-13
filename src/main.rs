@@ -112,9 +112,11 @@ fn handle_piped_stdin() -> process::ExitCode {
         Ok(result) => println!("{result}"),
         Err(interpreter_error) => {
             print_error(
-                match interpreter_error {
+                &match interpreter_error {
                     InterpreterError::Scanner(scanner_error) => match scanner_error {
-                        ScannerError::Unknown => "scanner failed for unknown reason",
+                        ScannerError::UnknownCharacter(c) => {
+                            format!("scanner encountered unknown character `{c}`")
+                        }
                     },
                 },
                 do_color_output,
