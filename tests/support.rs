@@ -19,3 +19,11 @@ where
 
     (cmd, temporary_directory)
 }
+
+pub fn format_expected_output(string: &str) -> String {
+    string
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| format!("{}\n", line.trim_start()))
+        .collect()
+}

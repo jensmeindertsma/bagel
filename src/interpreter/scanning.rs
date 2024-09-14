@@ -24,6 +24,7 @@ impl<'a> Iterator for Scanner<'a> {
             if self.fused {
                 return None;
             } else {
+                self.fused = true;
                 return Some(Ok(Token::Eof));
             }
         }

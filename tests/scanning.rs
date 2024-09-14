@@ -1,8 +1,8 @@
-mod setup;
+mod support;
 
 use predicates::prelude::*;
-use setup::setup_command_environment;
 use std::{fs::File, io::Write};
+use support::{format_expected_output, setup_command_environment};
 
 #[test]
 fn empty_file() {
@@ -10,7 +10,13 @@ fn empty_file() {
 
     File::create(temp_dir.join("test.lox")).unwrap();
 
-    cmd.assert().success().stdout(predicate::eq("EOF  null\n"));
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(format_expected_output(
+            "
+            EOF  null
+        ",
+        )));
 }
 
 #[test]
@@ -21,10 +27,14 @@ fn parentheses() {
 
     write!(file, "(()").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(
-        "LEFT_PAREN ( null
-        LEFT_PAREN ( null
-        RIGHT_PAREN ) null
-        EOF  null\n",
-    ));
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(format_expected_output(
+            "
+            LEFT_PAREN ( null
+            LEFT_PAREN ( null
+            RIGHT_PAREN ) null
+            EOF  null
+        ",
+        )));
 }
