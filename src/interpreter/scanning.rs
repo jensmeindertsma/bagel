@@ -31,10 +31,16 @@ impl<'a> Iterator for Scanner<'a> {
 
         let mut rest = self.input[self.index..].chars();
         let token = match rest.next()? {
-            '(' => Token::LeftParenthesis,
-            ')' => Token::RightParenthesis,
+            ',' => Token::Comma,
+            '.' => Token::Dot,
             '{' => Token::LeftBrace,
+            '(' => Token::LeftParenthesis,
+            '-' => Token::Minus,
+            '+' => Token::Plus,
             '}' => Token::RightBrace,
+            ')' => Token::RightParenthesis,
+            ';' => Token::Semicolon,
+            '*' => Token::Star,
             other => return Some(Err(ScannerError::UnknownCharacter(other))),
         };
 
@@ -51,11 +57,17 @@ pub enum ScannerError {
 
 #[derive(Debug)]
 pub enum Token {
+    Comma,
+    Dot,
     Eof,
     LeftBrace,
     LeftParenthesis,
+    Minus,
+    Plus,
     RightBrace,
     RightParenthesis,
+    Semicolon,
+    Star,
 }
 
 impl fmt::Display for Token {
@@ -64,11 +76,17 @@ impl fmt::Display for Token {
             f,
             "{}",
             match self {
+                Self::Comma => "COMMA , null",
+                Self::Dot => "DOT . null",
                 Self::Eof => "EOF  null",
                 Self::LeftBrace => "LEFT_BRACE { null",
                 Self::LeftParenthesis => "LEFT_PAREN ( null",
+                Self::Minus => "MINUS - null",
+                Self::Plus => "PLUS + null",
                 Self::RightBrace => "RIGHT_BRACE } null",
                 Self::RightParenthesis => "RIGHT_PAREN ) null",
+                Self::Semicolon => "SEMICOLON ; null",
+                Self::Star => "STAR * null",
             }
         )
     }
