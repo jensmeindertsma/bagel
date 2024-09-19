@@ -27,13 +27,17 @@ fn slash() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = "/()";
+    let contents = trim_string(
+        "
+        (   
+         )
+        ",
+    );
 
     write!(file, "{contents}").unwrap();
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
-            SLASH / null
             LEFT_PAREN ( null
             RIGHT_PAREN ) null
             EOF  null

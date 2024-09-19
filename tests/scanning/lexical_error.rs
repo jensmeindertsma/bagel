@@ -1,4 +1,4 @@
-use crate::support::{format_expected_output, setup_command_environment};
+use crate::support::{trim_string, setup_command_environment};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -12,7 +12,7 @@ fn lexical_error() {
 
     cmd.assert()
         .failure()
-        .stdout(predicate::eq(format_expected_output(
+        .stdout(predicate::eq(trim_string(
             "
             COMMA , null
             DOT . null
@@ -20,7 +20,7 @@ fn lexical_error() {
             EOF  null
             ",
         )))
-        .stderr(predicate::eq(format_expected_output(
+        .stderr(predicate::eq(trim_string(
             "
             [line 1] Error: Unexpected character: $
             [line 1] Error: Unexpected character: #

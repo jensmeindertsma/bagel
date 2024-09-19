@@ -1,4 +1,4 @@
-use crate::support::{format_expected_output, setup_command_environment};
+use crate::support::{trim_string, setup_command_environment};
 use predicates::prelude::*;
 use std::fs::File;
 
@@ -10,7 +10,7 @@ fn empty_file() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::eq(format_expected_output(
+        .stdout(predicate::eq(trim_string(
             "
             EOF  null
             ",

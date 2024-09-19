@@ -20,7 +20,7 @@ where
     (cmd, temporary_directory)
 }
 
-pub fn format_expected_output(string: &str) -> String {
+pub fn trim_string(string: &str) -> String {
     string
         .lines()
         .filter(|line| !line.trim().is_empty())
