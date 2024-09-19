@@ -40,6 +40,15 @@ impl<'a> Iterator for Scanner<'a> {
                 ';' => Some(Ok(Token::Semicolon)),
                 '*' => Some(Ok(Token::Star)),
 
+                '!' => {
+                    if self.characters.peek() == Some(&'=') {
+                        self.characters.next();
+                        Some(Ok(Token::BangEqual))
+                    } else {
+                        Some(Ok(Token::Bang))
+                    }
+                }
+
                 '=' => {
                     if self.characters.peek() == Some(&'=') {
                         self.characters.next();
@@ -65,6 +74,8 @@ pub enum ScannerError {
 
 #[derive(Debug)]
 pub enum Token {
+    Bang,
+    BangEqual,
     Comma,
     Dot,
     Eof,
@@ -86,6 +97,8 @@ impl fmt::Display for Token {
             f,
             "{}",
             match self {
+                Self::Bang => "BANG ! null",
+                Self::BangEqual => "BANG_EQUAL != null",
                 Self::Comma => "COMMA , null",
                 Self::Dot => "DOT . null",
                 Self::Eof => "EOF  null",
