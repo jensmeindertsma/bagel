@@ -31,6 +31,7 @@ impl<'a> Iterator for Scanner<'a> {
             Some(character) => {
                 enum Started {
                     IfNextEqual { then: Token, otherwise: Token },
+                    MaybeComment { otherwise: Token },
                 }
 
                 let started = match character {
@@ -65,21 +66,40 @@ impl<'a> Iterator for Scanner<'a> {
                         otherwise: Token::Greater,
                     },
 
-                    other => {
-                        return Some(Err(ScannerError::UnknownCharacter {
-                            character: other,
-                            line: 1,
-                        }))
+                    '/' => Started::MaybeComment {
+                        otherwise: Token::Slash,
+                    },
+
+                    character => {
+                        if character.is_whitespace() {
+                            return self.next();
+                        }
+
+                        return Some(Err(ScannerError::UnknownCharacter { character, line: 1 }));
                     }
                 };
 
                 let full_token = match started {
                     Started::IfNextEqual { then, otherwise } => {
-                        let next = self.characters.peek();
-
-                        if next == Some(&'=') {
+                        if self.characters.peek().copied() == Some('=') {
                             self.characters.next();
                             then
+                        } else {
+                            otherwise
+                        }
+                    }
+
+                    Started::MaybeComment { otherwise } => {
+                        if self.characters.peek().copied() == Some('/') {
+                            while let Some(char) = self.characters.peek() {
+                                if *char == '\n' {
+                                    break;
+                                } else {
+                                    self.characters.next();
+                                };
+                            }
+
+                            return self.next();
                         } else {
                             otherwise
                         }
@@ -117,6 +137,7 @@ pub enum Token {
     RightBrace,
     RightParenthesis,
     Semicolon,
+    Slash,
     Star,
 }
 
@@ -144,6 +165,7 @@ impl fmt::Display for Token {
                 Self::RightBrace => "RIGHT_BRACE } null",
                 Self::RightParenthesis => "RIGHT_PAREN ) null",
                 Self::Semicolon => "SEMICOLON ; null",
+                Self::Slash => "SLASH / null",
                 Self::Star => "STAR * null",
             }
         )

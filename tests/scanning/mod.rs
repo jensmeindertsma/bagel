@@ -1,5 +1,6 @@
 mod assignment_equality;
 mod braces;
+mod division_or_comment;
 mod empty_file;
 mod lexical_error;
 mod negation_inequality;
