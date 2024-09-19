@@ -1,22 +1,18 @@
-help:
-    just --list
+help: just --list
 
-build:
-    cargo build
+build: cargo build
 
-clean:
-    cargo clean
+clean: cargo clean
 
-run *ARGS:
-    cargo run {{ARGS}}
+run *ARGS: cargo run {{ARGS}}
 
-test:
-    cargo nextest run
+test: cargo nextest run
 
-push:
-    git push
-    just push-cc
+test-cc: codecrafters test
+
+push: git push
+  just push-cc
 
 push-cc:
-    # They still use `master` for some unknown reason
-    git push codecrafters main:master
+  # They still use `master` for some unknown reason
+  git push codecrafters main:master
