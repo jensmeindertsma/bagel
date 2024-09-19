@@ -28,41 +28,66 @@ impl<'a> Iterator for Scanner<'a> {
                     Some(Ok(Token::Eof))
                 }
             }
-            Some(character) => match character {
-                ',' => Some(Ok(Token::Comma)),
-                '.' => Some(Ok(Token::Dot)),
-                '{' => Some(Ok(Token::LeftBrace)),
-                '(' => Some(Ok(Token::LeftParenthesis)),
-                '-' => Some(Ok(Token::Minus)),
-                '+' => Some(Ok(Token::Plus)),
-                '}' => Some(Ok(Token::RightBrace)),
-                ')' => Some(Ok(Token::RightParenthesis)),
-                ';' => Some(Ok(Token::Semicolon)),
-                '*' => Some(Ok(Token::Star)),
-
-                '!' => {
-                    if self.characters.peek() == Some(&'=') {
-                        self.characters.next();
-                        Some(Ok(Token::BangEqual))
-                    } else {
-                        Some(Ok(Token::Bang))
-                    }
+            Some(character) => {
+                enum Started {
+                    IfNextEqual { then: Token, otherwise: Token },
                 }
 
-                '=' => {
-                    if self.characters.peek() == Some(&'=') {
-                        self.characters.next();
-                        Some(Ok(Token::EqualEqual))
-                    } else {
-                        Some(Ok(Token::Equal))
-                    }
-                }
+                let started = match character {
+                    ',' => return Some(Ok(Token::Comma)),
+                    '.' => return Some(Ok(Token::Dot)),
+                    '{' => return Some(Ok(Token::LeftBrace)),
+                    '(' => return Some(Ok(Token::LeftParenthesis)),
+                    '-' => return Some(Ok(Token::Minus)),
+                    '+' => return Some(Ok(Token::Plus)),
+                    '}' => return Some(Ok(Token::RightBrace)),
+                    ')' => return Some(Ok(Token::RightParenthesis)),
+                    ';' => return Some(Ok(Token::Semicolon)),
+                    '*' => return Some(Ok(Token::Star)),
 
-                other => Some(Err(ScannerError::UnknownCharacter {
-                    character: other,
-                    line: 1,
-                })),
-            },
+                    '!' => Started::IfNextEqual {
+                        then: Token::BangEqual,
+                        otherwise: Token::Bang,
+                    },
+
+                    '=' => Started::IfNextEqual {
+                        then: Token::EqualEqual,
+                        otherwise: Token::Equal,
+                    },
+
+                    '<' => Started::IfNextEqual {
+                        then: Token::LessEqual,
+                        otherwise: Token::Less,
+                    },
+
+                    '>' => Started::IfNextEqual {
+                        then: Token::GreaterEqual,
+                        otherwise: Token::Greater,
+                    },
+
+                    other => {
+                        return Some(Err(ScannerError::UnknownCharacter {
+                            character: other,
+                            line: 1,
+                        }))
+                    }
+                };
+
+                let full_token = match started {
+                    Started::IfNextEqual { then, otherwise } => {
+                        let next = self.characters.peek();
+
+                        if next == Some(&'=') {
+                            self.characters.next();
+                            then
+                        } else {
+                            otherwise
+                        }
+                    }
+                };
+
+                Some(Ok(full_token))
+            }
         }
     }
 }
@@ -81,8 +106,12 @@ pub enum Token {
     Eof,
     Equal,
     EqualEqual,
+    Greater,
+    GreaterEqual,
     LeftBrace,
     LeftParenthesis,
+    Less,
+    LessEqual,
     Minus,
     Plus,
     RightBrace,
@@ -104,8 +133,12 @@ impl fmt::Display for Token {
                 Self::Eof => "EOF  null",
                 Self::Equal => "EQUAL = null",
                 Self::EqualEqual => "EQUAL_EQUAL == null",
+                Self::Greater => "GREATER > null",
+                Self::GreaterEqual => "GREATER_EQUAL >= null",
                 Self::LeftBrace => "LEFT_BRACE { null",
                 Self::LeftParenthesis => "LEFT_PAREN ( null",
+                Self::Less => "LESS < null",
+                Self::LessEqual => "LESS_EQUAL <= null",
                 Self::Minus => "MINUS - null",
                 Self::Plus => "PLUS + null",
                 Self::RightBrace => "RIGHT_BRACE } null",
