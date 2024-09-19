@@ -34,6 +34,7 @@ impl<'a> Iterator for Scanner<'a> {
                 enum Started {
                     IfNextEqual { then: Token, otherwise: Token },
                     MaybeComment { otherwise: Token },
+                    String,
                 }
 
                 let started = match character {
@@ -72,6 +73,8 @@ impl<'a> Iterator for Scanner<'a> {
                         otherwise: Token::Slash,
                     },
 
+                    '"' => Started::String,
+
                     '\n' => {
                         self.line += 1;
 
@@ -99,7 +102,6 @@ impl<'a> Iterator for Scanner<'a> {
                             otherwise
                         }
                     }
-
                     Started::MaybeComment { otherwise } => {
                         if self.characters.peek().copied() == Some('/') {
                             while let Some(char) = self.characters.peek() {
@@ -115,6 +117,30 @@ impl<'a> Iterator for Scanner<'a> {
                             otherwise
                         }
                     }
+                    Started::String => {
+                        let mut literal = String::new();
+
+                        loop {
+                            let next = self.characters.peek();
+
+                            match next {
+                                None => {
+                                    return Some(Err(ScannerError::UnterminatedString {
+                                        line: self.line,
+                                    }))
+                                }
+                                Some(char) => {
+                                    if *char == '"' {
+                                        self.characters.next();
+                                        break Token::String { literal };
+                                    } else {
+                                        literal.push(*char);
+                                        self.characters.next();
+                                    };
+                                }
+                            }
+                        }
+                    }
                 };
 
                 Some(Ok(full_token))
@@ -126,6 +152,7 @@ impl<'a> Iterator for Scanner<'a> {
 #[derive(Debug)]
 pub enum ScannerError {
     UnknownCharacter { character: char, line: usize },
+    UnterminatedString { line: usize },
 }
 
 #[derive(Debug)]
@@ -150,35 +177,33 @@ pub enum Token {
     Semicolon,
     Slash,
     Star,
+    String { literal: String },
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Bang => "BANG ! null",
-                Self::BangEqual => "BANG_EQUAL != null",
-                Self::Comma => "COMMA , null",
-                Self::Dot => "DOT . null",
-                Self::Eof => "EOF  null",
-                Self::Equal => "EQUAL = null",
-                Self::EqualEqual => "EQUAL_EQUAL == null",
-                Self::Greater => "GREATER > null",
-                Self::GreaterEqual => "GREATER_EQUAL >= null",
-                Self::LeftBrace => "LEFT_BRACE { null",
-                Self::LeftParenthesis => "LEFT_PAREN ( null",
-                Self::Less => "LESS < null",
-                Self::LessEqual => "LESS_EQUAL <= null",
-                Self::Minus => "MINUS - null",
-                Self::Plus => "PLUS + null",
-                Self::RightBrace => "RIGHT_BRACE } null",
-                Self::RightParenthesis => "RIGHT_PAREN ) null",
-                Self::Semicolon => "SEMICOLON ; null",
-                Self::Slash => "SLASH / null",
-                Self::Star => "STAR * null",
-            }
-        )
+        match self {
+            Self::Bang => write!(f, "BANG ! null"),
+            Self::BangEqual => write!(f, "BANG_EQUAL != null"),
+            Self::Comma => write!(f, "COMMA , null"),
+            Self::Dot => write!(f, "DOT . null"),
+            Self::Eof => write!(f, "EOF  null"),
+            Self::Equal => write!(f, "EQUAL = null"),
+            Self::EqualEqual => write!(f, "EQUAL_EQUAL == null"),
+            Self::Greater => write!(f, "GREATER > null"),
+            Self::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
+            Self::LeftBrace => write!(f, "LEFT_BRACE {{ null"),
+            Self::LeftParenthesis => write!(f, "LEFT_PAREN ( null"),
+            Self::Less => write!(f, "LESS < null"),
+            Self::LessEqual => write!(f, "LESS_EQUAL <= null"),
+            Self::Minus => write!(f, "MINUS - null"),
+            Self::Plus => write!(f, "PLUS + null"),
+            Self::RightBrace => write!(f, "RIGHT_BRACE }} null"),
+            Self::RightParenthesis => write!(f, "RIGHT_PAREN ) null"),
+            Self::Semicolon => write!(f, "SEMICOLON ; null"),
+            Self::Slash => write!(f, "SLASH / null"),
+            Self::Star => write!(f, "STAR * null"),
+            Self::String { literal } => write!(f, "STRING \"{literal}\" {literal}"),
+        }
     }
 }

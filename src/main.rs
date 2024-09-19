@@ -64,6 +64,9 @@ fn run(command: Command) -> Result<(), Failure> {
                             ScannerError::UnknownCharacter { character, line } => {
                                 eprintln!("[line {line}] Error: Unexpected character: {character}",)
                             }
+                            ScannerError::UnterminatedString { line } => {
+                                eprintln!("[line {line}] Error: Unterminated string.",)
+                            }
                         }
                     }
                 }
