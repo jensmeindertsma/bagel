@@ -1,17 +1,16 @@
 use core::fmt;
+use std::str::Chars;
 
 pub struct Scanner<'a> {
-    input: &'a str,
-    index: usize,
-    fused: bool,
+    characters: Chars<'a>,
+    done: bool,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
-            input,
-            index: 0,
-            fused: false,
+            characters: input.chars(),
+            done: false,
         }
     }
 }
@@ -20,39 +19,38 @@ impl<'a> Iterator for Scanner<'a> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.input.is_empty() || self.input[self.index..].is_empty() {
-            if self.fused {
-                return None;
-            } else {
-                self.fused = true;
-                return Some(Ok(Token::Eof));
+        match self.characters.next() {
+            None => {
+                if self.done {
+                    None
+                } else {
+                    self.done = true;
+                    Some(Ok(Token::Eof))
+                }
             }
+            Some(character) => match character {
+                ',' => Some(Ok(Token::Comma)),
+                '.' => Some(Ok(Token::Dot)),
+                '{' => Some(Ok(Token::LeftBrace)),
+                '(' => Some(Ok(Token::LeftParenthesis)),
+                '-' => Some(Ok(Token::Minus)),
+                '+' => Some(Ok(Token::Plus)),
+                '}' => Some(Ok(Token::RightBrace)),
+                ')' => Some(Ok(Token::RightParenthesis)),
+                ';' => Some(Ok(Token::Semicolon)),
+                '*' => Some(Ok(Token::Star)),
+                other => Some(Err(ScannerError::UnknownCharacter {
+                    character: other,
+                    line: 1,
+                })),
+            },
         }
-
-        let mut rest = self.input[self.index..].chars();
-        let token = match rest.next()? {
-            ',' => Token::Comma,
-            '.' => Token::Dot,
-            '{' => Token::LeftBrace,
-            '(' => Token::LeftParenthesis,
-            '-' => Token::Minus,
-            '+' => Token::Plus,
-            '}' => Token::RightBrace,
-            ')' => Token::RightParenthesis,
-            ';' => Token::Semicolon,
-            '*' => Token::Star,
-            other => return Some(Err(ScannerError::UnknownCharacter(other))),
-        };
-
-        self.index += 1;
-
-        Some(Ok(token))
     }
 }
 
 #[derive(Debug)]
 pub enum ScannerError {
-    UnknownCharacter(char),
+    UnknownCharacter { character: char, line: usize },
 }
 
 #[derive(Debug)]

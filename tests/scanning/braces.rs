@@ -21,6 +21,6 @@ fn braces() {
             RIGHT_BRACE } null
             RIGHT_BRACE } null
             EOF  null
-        ",
+            ",
         )));
 }

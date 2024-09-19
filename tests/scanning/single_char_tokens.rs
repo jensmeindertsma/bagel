@@ -28,6 +28,6 @@ fn single_char_tokens() {
             SEMICOLON ; null
             RIGHT_PAREN ) null
             EOF  null
-        ",
+            ",
         )));
 }

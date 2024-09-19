@@ -1,16 +1,24 @@
-help: just --list
+help: 
+  just --list
 
-build: cargo build
+build: 
+  cargo build
 
-clean: cargo clean
+clean: 
+  cargo clean
 
-run *ARGS: cargo run {{ARGS}}
+run *ARGS: 
+  cargo run {{ARGS}}
 
-test: cargo nextest run
+test: 
+  cargo nextest run
 
-test-cc: codecrafters test
+test-cc: 
+  codecrafters test
 
-push: git push
+push:
+  # Push to both remotes
+  git push
   just push-cc
 
 push-cc:

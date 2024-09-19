@@ -13,6 +13,6 @@ fn empty_file() {
         .stdout(predicate::eq(format_expected_output(
             "
             EOF  null
-        ",
+            ",
         )));
 }

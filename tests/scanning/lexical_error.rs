@@ -3,21 +3,28 @@ use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
 #[test]
-fn parentheses() {
+fn lexical_error() {
     let (mut cmd, temp_dir) = setup_command_environment(["tokenize", "test.lox"]);
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    write!(file, "(()").unwrap();
+    write!(file, ",.$(#").unwrap();
 
     cmd.assert()
-        .success()
+        .failure()
         .stdout(predicate::eq(format_expected_output(
             "
+            COMMA , null
+            DOT . null
             LEFT_PAREN ( null
-            LEFT_PAREN ( null
-            RIGHT_PAREN ) null
             EOF  null
             ",
-        )));
+        )))
+        .stderr(predicate::eq(format_expected_output(
+            "
+            [line 1] Error: Unexpected character: $
+            [line 1] Error: Unexpected character: #
+            ",
+        )))
+        .code(predicate::eq(65));
 }
