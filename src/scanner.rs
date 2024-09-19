@@ -34,6 +34,7 @@ impl<'a> Iterator for Scanner<'a> {
                 enum Started {
                     IfNextEqual { then: Token, otherwise: Token },
                     MaybeComment { otherwise: Token },
+                    Number { first_digit: char },
                     String,
                 }
 
@@ -81,11 +82,11 @@ impl<'a> Iterator for Scanner<'a> {
                         return self.next();
                     }
 
-                    character => {
-                        if character.is_whitespace() {
-                            return self.next();
-                        }
+                    c if c.is_whitespace() => return self.next(),
 
+                    c if c.is_ascii_digit() => Started::Number { first_digit: c },
+
+                    character => {
                         return Some(Err(ScannerError::UnknownCharacter {
                             character,
                             line: self.line,
@@ -121,9 +122,7 @@ impl<'a> Iterator for Scanner<'a> {
                         let mut literal = String::new();
 
                         loop {
-                            let next = self.characters.peek();
-
-                            match next {
+                            match self.characters.peek() {
                                 None => {
                                     return Some(Err(ScannerError::UnterminatedString {
                                         line: self.line,
@@ -137,6 +136,29 @@ impl<'a> Iterator for Scanner<'a> {
                                         literal.push(*char);
                                         self.characters.next();
                                     };
+                                }
+                            }
+                        }
+                    }
+                    Started::Number { first_digit } => {
+                        let mut literal = String::from(first_digit);
+
+                        loop {
+                            match self.characters.peek() {
+                                None => {
+                                    // The number is only a single character long
+                                    let value = literal.parse().unwrap();
+                                    break Token::Number { literal, value };
+                                }
+                                Some(char) => {
+                                    if char.is_ascii_digit() || *char == '.' {
+                                        literal.push(*char);
+                                        self.characters.next();
+                                    } else {
+                                        // Encountered non-number characters, so the number is over.
+                                        let value = literal.parse().unwrap();
+                                        break Token::Number { literal, value };
+                                    }
                                 }
                             }
                         }
@@ -171,6 +193,7 @@ pub enum Token {
     Less,
     LessEqual,
     Minus,
+    Number { literal: String, value: f64 },
     Plus,
     RightBrace,
     RightParenthesis,
@@ -197,6 +220,13 @@ impl fmt::Display for Token {
             Self::Less => write!(f, "LESS < null"),
             Self::LessEqual => write!(f, "LESS_EQUAL <= null"),
             Self::Minus => write!(f, "MINUS - null"),
+            Self::Number { literal, value } => {
+                if *value == value.trunc() {
+                    write!(f, "NUMBER {literal} {value}.0")
+                } else {
+                    write!(f, "NUMBER {literal} {value}")
+                }
+            }
             Self::Plus => write!(f, "PLUS + null"),
             Self::RightBrace => write!(f, "RIGHT_BRACE }} null"),
             Self::RightParenthesis => write!(f, "RIGHT_PAREN ) null"),

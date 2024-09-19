@@ -5,6 +5,7 @@ mod empty_file;
 mod lexical_error;
 mod multi_line_error;
 mod negation_inequality;
+mod number_literal;
 mod parentheses;
 mod relational;
 mod single_char_tokens;
