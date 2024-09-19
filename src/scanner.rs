@@ -1,15 +1,15 @@
 use core::fmt;
-use std::str::Chars;
+use std::{iter::Peekable, str::Chars};
 
 pub struct Scanner<'a> {
-    characters: Chars<'a>,
+    characters: Peekable<Chars<'a>>,
     done: bool,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
-            characters: input.chars(),
+            characters: input.chars().peekable(),
             done: false,
         }
     }
@@ -39,6 +39,16 @@ impl<'a> Iterator for Scanner<'a> {
                 ')' => Some(Ok(Token::RightParenthesis)),
                 ';' => Some(Ok(Token::Semicolon)),
                 '*' => Some(Ok(Token::Star)),
+
+                '=' => {
+                    if self.characters.peek() == Some(&'=') {
+                        self.characters.next();
+                        Some(Ok(Token::EqualEqual))
+                    } else {
+                        Some(Ok(Token::Equal))
+                    }
+                }
+
                 other => Some(Err(ScannerError::UnknownCharacter {
                     character: other,
                     line: 1,
@@ -58,6 +68,8 @@ pub enum Token {
     Comma,
     Dot,
     Eof,
+    Equal,
+    EqualEqual,
     LeftBrace,
     LeftParenthesis,
     Minus,
@@ -77,6 +89,8 @@ impl fmt::Display for Token {
                 Self::Comma => "COMMA , null",
                 Self::Dot => "DOT . null",
                 Self::Eof => "EOF  null",
+                Self::Equal => "EQUAL = null",
+                Self::EqualEqual => "EQUAL_EQUAL == null",
                 Self::LeftBrace => "LEFT_BRACE { null",
                 Self::LeftParenthesis => "LEFT_PAREN ( null",
                 Self::Minus => "MINUS - null",
