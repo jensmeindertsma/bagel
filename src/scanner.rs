@@ -4,6 +4,7 @@ use std::{iter::Peekable, str::Chars};
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
     done: bool,
+    line: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -11,6 +12,7 @@ impl<'a> Scanner<'a> {
         Self {
             characters: input.chars().peekable(),
             done: false,
+            line: 1,
         }
     }
 }
@@ -70,12 +72,21 @@ impl<'a> Iterator for Scanner<'a> {
                         otherwise: Token::Slash,
                     },
 
+                    '\n' => {
+                        self.line += 1;
+
+                        return self.next();
+                    }
+
                     character => {
                         if character.is_whitespace() {
                             return self.next();
                         }
 
-                        return Some(Err(ScannerError::UnknownCharacter { character, line: 1 }));
+                        return Some(Err(ScannerError::UnknownCharacter {
+                            character,
+                            line: self.line,
+                        }));
                     }
                 };
 
