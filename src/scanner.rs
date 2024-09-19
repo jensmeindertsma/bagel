@@ -32,6 +32,7 @@ impl<'a> Iterator for Scanner<'a> {
             }
             Some(character) => {
                 enum Started {
+                    Identifier { first_char: char },
                     IfNextEqual { then: Token, otherwise: Token },
                     MaybeComment { otherwise: Token },
                     Number { first_digit: char },
@@ -86,6 +87,10 @@ impl<'a> Iterator for Scanner<'a> {
 
                     c if c.is_ascii_digit() => Started::Number { first_digit: c },
 
+                    c if c.is_ascii_alphabetic() || c == '_' => {
+                        Started::Identifier { first_char: c }
+                    }
+
                     character => {
                         return Some(Err(ScannerError::UnknownCharacter {
                             character,
@@ -95,6 +100,26 @@ impl<'a> Iterator for Scanner<'a> {
                 };
 
                 let full_token = match started {
+                    Started::Identifier { first_char } => {
+                        let mut lexeme = String::from(first_char);
+
+                        loop {
+                            match self.characters.peek() {
+                                None => break,
+                                Some(char) => {
+                                    if char.is_ascii_alphanumeric() || *char == '_' {
+                                        lexeme.push(*char);
+                                        self.characters.next();
+                                    } else {
+                                        // Literal is over
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        Token::Identifier { lexeme }
+                    }
                     Started::IfNextEqual { then, otherwise } => {
                         if self.characters.peek().copied() == Some('=') {
                             self.characters.next();
@@ -119,7 +144,7 @@ impl<'a> Iterator for Scanner<'a> {
                         }
                     }
                     Started::String => {
-                        let mut literal = String::new();
+                        let mut value = String::new();
 
                         loop {
                             match self.characters.peek() {
@@ -131,9 +156,9 @@ impl<'a> Iterator for Scanner<'a> {
                                 Some(char) => {
                                     if *char == '"' {
                                         self.characters.next();
-                                        break Token::String { literal };
+                                        break Token::String { value };
                                     } else {
-                                        literal.push(*char);
+                                        value.push(*char);
                                         self.characters.next();
                                     };
                                 }
@@ -147,8 +172,8 @@ impl<'a> Iterator for Scanner<'a> {
                             match self.characters.peek() {
                                 None => {
                                     // The number is only a single character long
-                                    let value = literal.parse().unwrap();
-                                    break Token::Number { literal, value };
+
+                                    break;
                                 }
                                 Some(char) => {
                                     if char.is_ascii_digit() || *char == '.' {
@@ -156,12 +181,14 @@ impl<'a> Iterator for Scanner<'a> {
                                         self.characters.next();
                                     } else {
                                         // Encountered non-number characters, so the number is over.
-                                        let value = literal.parse().unwrap();
-                                        break Token::Number { literal, value };
+                                        break;
                                     }
                                 }
                             }
                         }
+
+                        let value = literal.parse().unwrap();
+                        Token::Number { literal, value }
                     }
                 };
 
@@ -188,6 +215,7 @@ pub enum Token {
     EqualEqual,
     Greater,
     GreaterEqual,
+    Identifier { lexeme: String },
     LeftBrace,
     LeftParenthesis,
     Less,
@@ -200,7 +228,7 @@ pub enum Token {
     Semicolon,
     Slash,
     Star,
-    String { literal: String },
+    String { value: String },
 }
 
 impl fmt::Display for Token {
@@ -215,6 +243,7 @@ impl fmt::Display for Token {
             Self::EqualEqual => write!(f, "EQUAL_EQUAL == null"),
             Self::Greater => write!(f, "GREATER > null"),
             Self::GreaterEqual => write!(f, "GREATER_EQUAL >= null"),
+            Self::Identifier { lexeme } => write!(f, "IDENTIFIER {lexeme} null"),
             Self::LeftBrace => write!(f, "LEFT_BRACE {{ null"),
             Self::LeftParenthesis => write!(f, "LEFT_PAREN ( null"),
             Self::Less => write!(f, "LESS < null"),
@@ -233,7 +262,7 @@ impl fmt::Display for Token {
             Self::Semicolon => write!(f, "SEMICOLON ; null"),
             Self::Slash => write!(f, "SLASH / null"),
             Self::Star => write!(f, "STAR * null"),
-            Self::String { literal } => write!(f, "STRING \"{literal}\" {literal}"),
+            Self::String { value } => write!(f, "STRING \"{value}\" {value}"),
         }
     }
 }

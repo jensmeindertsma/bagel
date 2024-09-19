@@ -2,6 +2,7 @@ mod assignment_equality;
 mod braces;
 mod division_or_comment;
 mod empty_file;
+mod identifiers;
 mod lexical_error;
 mod multi_line_error;
 mod negation_inequality;
