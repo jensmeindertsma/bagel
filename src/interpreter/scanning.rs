@@ -29,12 +29,12 @@ impl<'a> Iterator for Scanner<'a> {
             }
         }
 
-        // TODO: add some debug logging here to figure out why it doesn't work!
-
         let mut rest = self.input[self.index..].chars();
         let token = match rest.next()? {
             '(' => Token::LeftParenthesis,
             ')' => Token::RightParenthesis,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
             other => return Some(Err(ScannerError::UnknownCharacter(other))),
         };
 
@@ -52,7 +52,9 @@ pub enum ScannerError {
 #[derive(Debug)]
 pub enum Token {
     Eof,
+    LeftBrace,
     LeftParenthesis,
+    RightBrace,
     RightParenthesis,
 }
 
@@ -63,7 +65,9 @@ impl fmt::Display for Token {
             "{}",
             match self {
                 Self::Eof => "EOF  null",
+                Self::LeftBrace => "LEFT_BRACE { null",
                 Self::LeftParenthesis => "LEFT_PAREN ( null",
+                Self::RightBrace => "RIGHT_BRACE } null",
                 Self::RightParenthesis => "RIGHT_PAREN ) null",
             }
         )
