@@ -1,9 +1,13 @@
 mod command;
+mod parser;
 mod scanner;
 
-use command::{Command, CommandParseError, TryFromIterator};
+use command::{Command, TryFromIterator};
+use core::fmt::{self, Formatter};
 use owo_colors::OwoColorize;
-use scanner::{Scanner, ScannerError};
+use parser::{Parser, ParserError};
+use scanner::{Scanner, ScannerError, Token};
+use std::error::Error;
 use std::process::ExitCode;
 use std::{env, fs, io};
 
@@ -13,22 +17,25 @@ fn main() -> ExitCode {
     let command = match Command::try_from_iterator(arguments) {
         Ok(c) => c,
         Err(error) => {
-            print_error(&match error {
-                CommandParseError::MissingCommand => "missing command".to_owned(),
-                CommandParseError::MissingFilename => "missing filename".to_owned(),
-                CommandParseError::UnknownCommand(command) => {
-                    format!("unknown command `{command}`")
-                }
-            });
+            print_error(error);
             return ExitCode::FAILURE;
         }
     };
 
     match run(command) {
         Ok(_) => ExitCode::SUCCESS,
-        Err(failure) => match failure {
-            Failure::FileNotFound => ExitCode::from(2),
-            Failure::Scanner => ExitCode::from(65),
+        Err(error) => match error {
+            Failure::FileReadError(_) => {
+                print_error(error);
+                ExitCode::from(2)
+            }
+            Failure::Scanner(errors) => {
+                for error in errors {
+                    eprintln!("{error}")
+                }
+
+                ExitCode::from(65)
+            }
         },
     }
 }
@@ -38,42 +45,30 @@ fn run(command: Command) -> Result<(), Failure> {
         Command::Help => {
             println!("{}", "HELP IS COMING!!!!".bold().underline())
         }
+        Command::Parse { filename } => {
+            let contents = fs::read_to_string(filename).map_err(Failure::FileReadError)?;
+
+            let scanner = Scanner::new(&contents);
+            let tokens = scanner.finish().map_err(Failure::Scanner)?;
+
+            let parser = Parser::new(tokens);
+            let tree = parser.finish().map_err(Failure::Parser)?;
+        }
         Command::Tokenize { filename } => {
-            let contents = match fs::read_to_string(filename) {
-                Ok(c) => c,
-                Err(error) => {
-                    let message = match error.kind() {
-                        io::ErrorKind::NotFound => "file not found",
-                        _ => "unknown error reading file",
-                    };
+            let contents = fs::read_to_string(filename).map_err(Failure::FileReadError)?;
 
-                    print_error(message);
-                    return Err(Failure::FileNotFound);
-                }
-            };
-
-            let mut failure = false;
+            let mut errors = Vec::new();
             let scanner = Scanner::new(&contents);
 
             for next in scanner {
                 match next {
                     Ok(token) => println!("{token}"),
-                    Err(error) => {
-                        failure = true;
-                        match error {
-                            ScannerError::UnknownCharacter { character, line } => {
-                                eprintln!("[line {line}] Error: Unexpected character: {character}",)
-                            }
-                            ScannerError::UnterminatedString { line } => {
-                                eprintln!("[line {line}] Error: Unterminated string.",)
-                            }
-                        }
-                    }
+                    Err(error) => errors.push(error),
                 }
             }
 
-            if failure {
-                return Err(Failure::Scanner);
+            if !errors.is_empty() {
+                return Err(Failure::Scanner(errors));
             }
         }
     }
@@ -81,11 +76,25 @@ fn run(command: Command) -> Result<(), Failure> {
     Ok(())
 }
 
+#[derive(Debug)]
 enum Failure {
-    FileNotFound,
-    Scanner,
+    FileReadError(io::Error),
+    Parser(ParserError),
+    Scanner(Vec<ScannerError>),
 }
 
-fn print_error(message: &str) {
-    println!("{}{} {}", "error".bold().red(), ":".bold(), message.bold())
+impl fmt::Display for Failure {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FileReadError(io_error) => write!(f, "failed to read file: {io_error}"),
+            Self::Parser(error) => write!(f, "parser failed: {error}"),
+            Self::Scanner(_) => write!(f, "scanner failed",),
+        }
+    }
+}
+
+impl Error for Failure {}
+
+fn print_error(error: impl Error) {
+    println!("{}{} {}", "error".bold().red(), ":".bold(), error.bold())
 }

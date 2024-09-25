@@ -14,12 +14,12 @@ fn assignment_equality_operators() {
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
-            EQUAL = null
-            LEFT_BRACE { null
-            EQUAL_EQUAL == null
-            EQUAL = null
-            RIGHT_BRACE } null
-            EOF  null
-            ",
+        EQUAL = null
+        LEFT_BRACE { null
+        EQUAL_EQUAL == null
+        EQUAL = null
+        RIGHT_BRACE } null
+        EOF  null
+        ",
     )));
 }

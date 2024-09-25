@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use assert_fs::TempDir;
-use std::ffi::OsStr;
+use std::{ffi::OsStr, fmt::Write};
 
 pub fn setup_command_environment<Item>(
     arguments: impl IntoIterator<Item = Item>,
@@ -24,6 +24,8 @@ pub fn trim_string(string: &str) -> String {
     string
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .map(|line| format!("{}\n", line.trim_start()))
-        .collect()
+        .fold(String::new(), |mut string, line| {
+            writeln!(string, "{}", line.trim_start()).unwrap();
+            string
+        })
 }

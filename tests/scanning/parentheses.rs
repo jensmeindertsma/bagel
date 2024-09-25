@@ -1,4 +1,4 @@
-use crate::support::{trim_string, setup_command_environment};
+use crate::support::{setup_command_environment, trim_string};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,14 +10,12 @@ fn parentheses() {
 
     write!(file, "(()").unwrap();
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::eq(trim_string(
-            "
-            LEFT_PAREN ( null
-            LEFT_PAREN ( null
-            RIGHT_PAREN ) null
-            EOF  null
-            ",
-        )));
+    cmd.assert().success().stdout(predicate::eq(trim_string(
+        "
+        LEFT_PAREN ( null
+        LEFT_PAREN ( null
+        RIGHT_PAREN ) null
+        EOF  null
+        ",
+    )));
 }

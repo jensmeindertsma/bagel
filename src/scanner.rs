@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{iter::Peekable, str::Chars};
+use core::fmt::{self, Formatter};
+use std::{error::Error, iter::Peekable, str::Chars};
 
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
@@ -13,6 +13,24 @@ impl<'a> Scanner<'a> {
             characters: input.chars().peekable(),
             done: false,
             line: 1,
+        }
+    }
+
+    pub fn finish(self) -> Result<Vec<Token>, Vec<ScannerError>> {
+        let mut tokens = Vec::new();
+        let mut errors = Vec::new();
+
+        for result in self {
+            match result {
+                Ok(token) => tokens.push(token),
+                Err(error) => errors.push(error),
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(tokens)
+        } else {
+            Err(errors)
         }
     }
 }
@@ -221,6 +239,21 @@ pub enum ScannerError {
     UnknownCharacter { character: char, line: usize },
     UnterminatedString { line: usize },
 }
+
+impl fmt::Display for ScannerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnknownCharacter { character, line } => {
+                write!(f, "[line {line}] Error: Unexpected character: {character}")
+            }
+            Self::UnterminatedString { line } => {
+                write!(f, "[line {line}] Error: Unterminated string.")
+            }
+        }
+    }
+}
+
+impl Error for ScannerError {}
 
 #[derive(Debug)]
 pub enum Token {

@@ -8,9 +8,7 @@ fn string() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = "\"foo baz\"";
-
-    write!(file, "{contents}").unwrap();
+    write!(file, "\"foo baz\"").unwrap();
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
@@ -34,8 +32,8 @@ fn unterminated_string() {
         .failure()
         .stdout(predicate::eq(trim_string(
             "
-        EOF  null
-        ",
+            EOF  null
+            ",
         )))
         .stderr(predicate::eq(trim_string(
             "

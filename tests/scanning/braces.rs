@@ -1,4 +1,4 @@
-use crate::support::{trim_string, setup_command_environment};
+use crate::support::{setup_command_environment, trim_string};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -12,15 +12,13 @@ fn braces() {
 
     write!(file, "{contents}").unwrap();
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::eq(trim_string(
-            "
-            LEFT_BRACE { null
-            LEFT_BRACE { null
-            RIGHT_BRACE } null
-            RIGHT_BRACE } null
-            EOF  null
-            ",
-        )));
+    cmd.assert().success().stdout(predicate::eq(trim_string(
+        "
+        LEFT_BRACE { null
+        LEFT_BRACE { null
+        RIGHT_BRACE } null
+        RIGHT_BRACE } null
+        EOF  null
+        ",
+    )));
 }

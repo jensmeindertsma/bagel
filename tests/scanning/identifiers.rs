@@ -12,10 +12,10 @@ fn braces() {
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
-            IDENTIFIER foo null
-            IDENTIFIER bar null
-            IDENTIFIER _hello null
-            EOF  null
-            ",
+        IDENTIFIER foo null
+        IDENTIFIER bar null
+        IDENTIFIER _hello null
+        EOF  null
+        ",
     )));
 }

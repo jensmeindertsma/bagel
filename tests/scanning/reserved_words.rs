@@ -8,14 +8,12 @@ fn reserved_words() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = "and";
-
-    write!(file, "{contents}").unwrap();
+    write!(file, "and").unwrap();
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
-            AND and null
-            EOF  null
-            ",
+        AND and null
+        EOF  null
+        ",
     )));
 }

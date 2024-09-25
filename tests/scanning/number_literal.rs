@@ -26,9 +26,7 @@ fn decimal() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = "1234.1234";
-
-    write!(file, "{contents}").unwrap();
+    write!(file, "1234.1234").unwrap();
 
     cmd.assert().success().stdout(predicate::eq(trim_string(
         "
