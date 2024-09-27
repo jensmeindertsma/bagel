@@ -38,6 +38,7 @@ where
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
             Token::Nil => Tree::Primitive(Primitive::Nil),
             Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
+            Token::String { value } => Tree::Primitive(Primitive::String(value)),
             _ => return Err(vec![ParserError::UnexpectedToken(token)]),
         };
 
@@ -72,6 +73,7 @@ pub enum Primitive {
     Boolean(bool),
     Nil,
     Number(f64),
+    String(String),
 }
 
 impl fmt::Display for Primitive {
@@ -86,6 +88,7 @@ impl fmt::Display for Primitive {
                     write!(f, "{n}")
                 }
             }
+            Self::String(string) => write!(f, "{string}"),
         }
     }
 }

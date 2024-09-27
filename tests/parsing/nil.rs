@@ -3,7 +3,7 @@ use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
 #[test]
-fn true_test() {
+fn nil() {
     let (mut cmd, temp_dir) = setup_command_environment(["parse", "test.lox"]);
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
