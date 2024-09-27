@@ -1,33 +1,87 @@
-use core::fmt::{self, Formatter};
-use std::error::Error;
-
 use crate::scanner::Token;
+use core::fmt::{self, Formatter};
+use std::{error::Error, iter::Peekable};
 
-pub struct Parser {
-    input: Vec<Token>,
+pub struct Parser<T>
+where
+    T: Iterator,
+{
+    tokens: Peekable<T>,
 }
 
-pub enum Tree {
-    Foo,
-}
-
-impl Parser {
-    pub fn new(input: Vec<Token>) -> Self {
-        Self { input }
+impl<T> Parser<T>
+where
+    T: Iterator<Item = Token>,
+{
+    pub fn new(tokens: T) -> Self {
+        Self {
+            tokens: tokens.peekable(),
+        }
     }
 
-    pub fn finish(self) -> Result<Tree, ParserError> {
-        todo!()
+    pub fn parse(&mut self) -> Result<Tree, Vec<ParserError>> {
+        self.parse_expression()
+    }
+
+    fn parse_expression(&mut self) -> Result<Tree, Vec<ParserError>> {
+        self.parse_expression_within(0)
+    }
+
+    fn parse_expression_within(
+        &mut self,
+        minimum_binding_power: u8,
+    ) -> Result<Tree, Vec<ParserError>> {
+        let token = self.tokens.next().ok_or(vec![ParserError::UnexpectedEOF])?;
+
+        let tree = match token {
+            Token::True => Tree::Primitive(Primitive::Boolean(true)),
+            Token::False => Tree::Primitive(Primitive::Boolean(false)),
+            _ => return Err(vec![ParserError::UnexpectedToken(token)]),
+        };
+
+        Ok(tree)
     }
 }
 
 #[derive(Debug)]
-pub enum ParserError {}
+pub enum ParserError {
+    UnexpectedEOF,
+    UnexpectedToken(Token),
+}
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "todo: implement this!")
+        match self {
+            Self::UnexpectedEOF => write!(f, "unexpected EOF"),
+            Self::UnexpectedToken(token) => {
+                write!(f, "found unexpected token `{token}`")
+            }
+        }
     }
 }
 
 impl Error for ParserError {}
+
+pub enum Tree {
+    Primitive(Primitive),
+}
+
+pub enum Primitive {
+    Boolean(bool),
+}
+
+impl fmt::Display for Primitive {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Boolean(boolean) => write!(f, "{boolean}"),
+        }
+    }
+}
+
+impl fmt::Display for Tree {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Primitive(primitive) => write!(f, "{primitive}"),
+        }
+    }
+}

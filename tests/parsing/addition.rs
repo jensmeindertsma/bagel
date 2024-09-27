@@ -20,7 +20,7 @@ fn tokenize() {
     )));
 }
 
-// #[test]
+#[test]
 fn parse() {
     let (mut cmd, temp_dir) = setup_command_environment(["parse", "test.lox"]);
 

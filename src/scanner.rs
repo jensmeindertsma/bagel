@@ -136,6 +136,8 @@ impl<'a> Iterator for Scanner<'a> {
                             }
                         }
 
+                        // Check whether identifier is actually
+                        // reserved keyword
                         match lexeme.as_str() {
                             "and" => Token::And,
                             "class" => Token::Class,
@@ -187,7 +189,7 @@ impl<'a> Iterator for Scanner<'a> {
                                 None => {
                                     return Some(Err(ScannerError::UnterminatedString {
                                         line: self.line,
-                                    }))
+                                    }));
                                 }
                                 Some(char) => {
                                     if *char == '"' {
@@ -208,7 +210,6 @@ impl<'a> Iterator for Scanner<'a> {
                             match self.characters.peek() {
                                 None => {
                                     // The number is only a single character long
-
                                     break;
                                 }
                                 Some(char) => {

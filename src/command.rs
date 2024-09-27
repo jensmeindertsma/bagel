@@ -4,52 +4,41 @@ use std::error::Error;
 pub enum Command {
     Help,
     Parse { filename: String },
+    Play,
     Tokenize { filename: String },
 }
 
-pub trait TryFromIterator {
-    type Item;
-    type Error;
-
-    fn try_from_iterator(iterator: impl Iterator<Item = Self::Item>) -> Result<Self, Self::Error>
-    where
-        Self: Sized;
-}
-
-impl TryFromIterator for Command {
-    type Item = String;
-    type Error = CommandParseError;
-
-    fn try_from_iterator(
-        mut iterator: impl Iterator<Item = Self::Item>,
-    ) -> Result<Self, Self::Error> {
-        let command = iterator.next().ok_or(CommandParseError::MissingCommand)?;
+impl Command {
+    pub fn try_from_iterator(
+        mut iterator: impl Iterator<Item = String>,
+    ) -> Result<Self, CommandError> {
+        let command = iterator.next().ok_or(CommandError::MissingCommand)?;
 
         match command.as_str() {
             "help" => Ok(Self::Help),
             "parse" => {
-                let filename = iterator.next().ok_or(CommandParseError::MissingFilename)?;
+                let filename = iterator.next().ok_or(CommandError::MissingFilename)?;
 
                 Ok(Self::Parse { filename })
             }
             "tokenize" => {
-                let filename = iterator.next().ok_or(CommandParseError::MissingFilename)?;
+                let filename = iterator.next().ok_or(CommandError::MissingFilename)?;
 
                 Ok(Self::Tokenize { filename })
             }
-            _ => Err(CommandParseError::UnknownCommand(command)),
+            _ => Err(CommandError::UnknownCommand(command)),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum CommandParseError {
+pub enum CommandError {
     MissingCommand,
     MissingFilename,
     UnknownCommand(String),
 }
 
-impl fmt::Display for CommandParseError {
+impl fmt::Display for CommandError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::MissingCommand => write!(f, "missing command"),
@@ -59,4 +48,4 @@ impl fmt::Display for CommandParseError {
     }
 }
 
-impl Error for CommandParseError {}
+impl Error for CommandError {}
