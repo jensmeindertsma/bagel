@@ -37,6 +37,7 @@ where
             Token::True => Tree::Primitive(Primitive::Boolean(true)),
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
             Token::Nil => Tree::Primitive(Primitive::Nil),
+            Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
             _ => return Err(vec![ParserError::UnexpectedToken(token)]),
         };
 
@@ -70,6 +71,7 @@ pub enum Tree {
 pub enum Primitive {
     Boolean(bool),
     Nil,
+    Number(f64),
 }
 
 impl fmt::Display for Primitive {
@@ -77,6 +79,13 @@ impl fmt::Display for Primitive {
         match self {
             Self::Boolean(boolean) => write!(f, "{boolean}"),
             Self::Nil => write!(f, "nil"),
+            Self::Number(n) => {
+                if *n == n.trunc() {
+                    write!(f, "{n}.0")
+                } else {
+                    write!(f, "{n}")
+                }
+            }
         }
     }
 }

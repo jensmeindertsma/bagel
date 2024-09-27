@@ -1,3 +1,4 @@
 mod addition;
-mod booleans;
+mod boolean;
 mod nil;
+mod number;
