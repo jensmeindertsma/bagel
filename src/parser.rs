@@ -36,6 +36,7 @@ where
         let tree = match token {
             Token::True => Tree::Primitive(Primitive::Boolean(true)),
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
+            Token::Nil => Tree::Primitive(Primitive::Nil),
             _ => return Err(vec![ParserError::UnexpectedToken(token)]),
         };
 
@@ -54,7 +55,7 @@ impl fmt::Display for ParserError {
         match self {
             Self::UnexpectedEOF => write!(f, "unexpected EOF"),
             Self::UnexpectedToken(token) => {
-                write!(f, "found unexpected token `{token}`")
+                write!(f, "found unexpected token `{token:?}`")
             }
         }
     }
@@ -68,12 +69,14 @@ pub enum Tree {
 
 pub enum Primitive {
     Boolean(bool),
+    Nil,
 }
 
 impl fmt::Display for Primitive {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Boolean(boolean) => write!(f, "{boolean}"),
+            Self::Nil => write!(f, "nil"),
         }
     }
 }
