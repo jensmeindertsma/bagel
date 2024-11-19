@@ -15,27 +15,9 @@ impl<'a> Scanner<'a> {
             line: 1,
         }
     }
-
-    pub fn finish(self) -> Result<Vec<Token>, Vec<ScannerError>> {
-        let mut tokens = Vec::new();
-        let mut errors = Vec::new();
-
-        for result in self {
-            match result {
-                Ok(token) => tokens.push(token),
-                Err(error) => errors.push(error),
-            }
-        }
-
-        if errors.is_empty() {
-            Ok(tokens)
-        } else {
-            Err(errors)
-        }
-    }
 }
 
-impl<'a> Iterator for Scanner<'a> {
+impl Iterator for Scanner<'_> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -245,10 +227,10 @@ impl fmt::Display for ScannerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnknownCharacter { character, line } => {
-                write!(f, "[line {line}] Error: Unexpected character: {character}")
+                write!(f, "unexpected character `{character}` on line {line}")
             }
             Self::UnterminatedString { line } => {
-                write!(f, "[line {line}] Error: Unterminated string.")
+                write!(f, "unterminated string on line {line}")
             }
         }
     }
@@ -256,7 +238,7 @@ impl fmt::Display for ScannerError {
 
 impl Error for ScannerError {}
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Token {
     And,
     Bang,

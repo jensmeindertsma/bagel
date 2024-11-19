@@ -11,7 +11,7 @@ where
 
 impl<T> Parser<T>
 where
-    T: Iterator<Item = Token>,
+    T: Iterator<Item = Token> + Clone,
 {
     pub fn new(tokens: T) -> Self {
         Self {
@@ -20,29 +20,21 @@ where
     }
 
     pub fn parse(&mut self) -> Result<Tree, Vec<ParserError>> {
-        self.parse_expression()
+        self.parse_expression(0)
     }
 
-    fn parse_expression(&mut self) -> Result<Tree, Vec<ParserError>> {
-        self.parse_expression_within(0)
+    fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, Vec<ParserError>> {
+        let left_hand_side = self.tokens.next().ok_or(ParserError::UnexpectedEOF);
+
+        todo!()
     }
+}
 
-    fn parse_expression_within(
-        &mut self,
-        minimum_binding_power: u8,
-    ) -> Result<Tree, Vec<ParserError>> {
-        let token = self.tokens.next().ok_or(vec![ParserError::UnexpectedEOF])?;
+pub enum Tree {}
 
-        let tree = match token {
-            Token::True => Tree::Primitive(Primitive::Boolean(true)),
-            Token::False => Tree::Primitive(Primitive::Boolean(false)),
-            Token::Nil => Tree::Primitive(Primitive::Nil),
-            Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
-            Token::String { value } => Tree::Primitive(Primitive::String(value)),
-            _ => return Err(vec![ParserError::UnexpectedToken(token)]),
-        };
-
-        Ok(tree)
+impl fmt::Display for Tree {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "todo")
     }
 }
 
@@ -64,39 +56,3 @@ impl fmt::Display for ParserError {
 }
 
 impl Error for ParserError {}
-
-pub enum Tree {
-    Primitive(Primitive),
-}
-
-pub enum Primitive {
-    Boolean(bool),
-    Nil,
-    Number(f64),
-    String(String),
-}
-
-impl fmt::Display for Primitive {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Boolean(boolean) => write!(f, "{boolean}"),
-            Self::Nil => write!(f, "nil"),
-            Self::Number(n) => {
-                if *n == n.trunc() {
-                    write!(f, "{n}.0")
-                } else {
-                    write!(f, "{n}")
-                }
-            }
-            Self::String(string) => write!(f, "{string}"),
-        }
-    }
-}
-
-impl fmt::Display for Tree {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Primitive(primitive) => write!(f, "{primitive}"),
-        }
-    }
-}
