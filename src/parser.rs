@@ -26,8 +26,8 @@ where
         self.parse_expression(0)
     }
 
-    fn parse_expression(&mut self, _minimum_binding_power: u8) -> Result<Tree, ParserError> {
-        let left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEOF)? {
+    fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, ParserError> {
+        let mut left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEOF)? {
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
             Token::Nil => Tree::Primitive(Primitive::Nil),
             Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
@@ -44,7 +44,7 @@ where
 
                 Tree::Operation {
                     operator: Operator::Group,
-                    expression: Box::new(inside),
+                    arguments: vec![inside],
                 }
             }
 
@@ -63,18 +63,47 @@ where
 
                 Tree::Operation {
                     operator,
-                    expression: Box::new(expression),
+                    arguments: vec![expression],
                 }
             }
-            _ => todo!(),
+            _ => todo!("unhandled token"),
         };
 
-        // loop {
-        //     let token = match self.tokens.next() {
-        //         None => break,
-        //         Some(Token::RightParenthesis) => break,
-        //     };
-        // }
+        loop {
+            // We've got ourselves a left-hand-side, now we look at the operator we expect
+            // to follow it. We then keep folding into the left-hand-side new expressions
+            // until we find the point where the next operator binds weaker to the latest token
+            // than we do. This marks the end of the folding loop.
+
+            let operator = match self.tokens.peek() {
+                None | Some(Token::Eof) => break,
+                Some(Token::RightParenthesis) => break,
+                Some(Token::Slash) => Operator::Division,
+                Some(Token::Star) => Operator::Multiplication,
+                _ => todo!("unhandled operator"),
+            };
+
+            let (Some(left_binding_power), Some(right_binding_power)) = operator.binding_power()
+            else {
+                panic!("failed to get operator binding power")
+            };
+
+            if left_binding_power < minimum_binding_power {
+                // We have finished folding the expression because the next operator
+                // binds weaker to our current token
+                break;
+            }
+
+            // We should consume the token we peeked at.
+            self.tokens.next();
+
+            let right_hand_side = self.parse_expression(right_binding_power)?;
+
+            left_hand_side = Tree::Operation {
+                operator,
+                arguments: vec![left_hand_side, right_hand_side],
+            };
+        }
 
         Ok(left_hand_side)
     }

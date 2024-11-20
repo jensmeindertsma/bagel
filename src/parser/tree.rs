@@ -5,7 +5,7 @@ use std::fmt::Debug;
 pub enum Tree {
     Operation {
         operator: Operator,
-        expression: Box<Tree>,
+        arguments: Vec<Tree>,
     },
     Primitive(Primitive),
 }
@@ -15,8 +15,16 @@ impl fmt::Display for Tree {
         match self {
             Self::Operation {
                 operator,
-                expression,
-            } => write!(f, "({operator} {expression})"),
+                arguments,
+            } => {
+                write!(f, "({operator}")?;
+
+                for argument in arguments {
+                    write!(f, " {argument}")?;
+                }
+
+                write!(f, ")")
+            }
             Self::Primitive(primitive) => write!(f, "{primitive}"),
         }
     }
@@ -50,7 +58,9 @@ impl fmt::Display for Primitive {
 
 #[derive(Debug)]
 pub enum Operator {
+    Division,
     Group,
+    Multiplication,
     Negation,
     Not,
 }
@@ -58,7 +68,9 @@ pub enum Operator {
 impl fmt::Display for Operator {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Division => write!(f, "/"),
             Self::Group => write!(f, "group"),
+            Self::Multiplication => write!(f, "*"),
             Self::Negation => write!(f, "-"),
             Self::Not => write!(f, "!"),
         }
@@ -68,6 +80,7 @@ impl fmt::Display for Operator {
 impl Operator {
     pub fn binding_power(&self) -> (Option<u8>, Option<u8>) {
         match self {
+            Self::Division | Self::Multiplication => (Some(32), Some(33)),
             Self::Group => (None, None),
             Self::Negation | Self::Not => (None, Some(u8::MAX)),
         }
