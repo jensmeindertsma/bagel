@@ -1,40 +1,51 @@
+mod tree;
+
 use crate::scanner::Token;
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable};
+use tree::{Primitive, Tree};
 
 pub struct Parser<T>
 where
-    T: Iterator,
+    T: IntoIterator,
 {
-    tokens: Peekable<T>,
+    tokens: Peekable<T::IntoIter>,
 }
 
 impl<T> Parser<T>
 where
-    T: Iterator<Item = Token> + Clone,
+    T: IntoIterator<Item = Token>,
 {
     pub fn new(tokens: T) -> Self {
         Self {
-            tokens: tokens.peekable(),
+            tokens: tokens.into_iter().peekable(),
         }
     }
 
-    pub fn parse(&mut self) -> Result<Tree, Vec<ParserError>> {
+    pub fn parse(&mut self) -> Result<Tree, ParserError> {
         self.parse_expression(0)
     }
 
-    fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, Vec<ParserError>> {
-        let left_hand_side = self.tokens.next().ok_or(ParserError::UnexpectedEOF);
+    fn parse_expression(&mut self, _minimum_binding_power: u8) -> Result<Tree, ParserError> {
+        let left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEOF)? {
+            Token::False => Tree::Primitive(Primitive::Boolean(false)),
+            Token::Nil => Tree::Primitive(Primitive::Nil),
+            Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
+            Token::String { value } => Tree::Primitive(Primitive::String(value)),
+            Token::True => Tree::Primitive(Primitive::Boolean(true)),
+            _ => todo!(),
+        };
 
-        todo!()
-    }
-}
+        // loop {
+        //     let operation = match self.tokens.peek() {
+        //         None => break,
+        //         Some(operation) => operation,
+        //     };
 
-pub enum Tree {}
+        //     todo!()
+        // }
 
-impl fmt::Display for Tree {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "todo")
+        Ok(left_hand_side)
     }
 }
 

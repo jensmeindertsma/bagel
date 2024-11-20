@@ -1,43 +1,49 @@
+mod command;
 mod parser;
 mod scanner;
 
+use command::{Command, CommandError};
 use owo_colors::OwoColorize;
+use parser::Parser;
 use scanner::Scanner;
-use std::{env, fs, io, process::ExitCode};
+use std::{
+    env, fs, io,
+    process::{ExitCode, Termination},
+};
 
-fn print_error(error: impl std::error::Error) {
-    eprintln!("{}{} {}", "error".bold().red(), ":".bold(), error.bold());
-}
+pub fn main() -> impl Termination {
+    let failure = match run(env::args().skip(1)) {
+        Ok(_) => return ExitCode::SUCCESS,
+        Err(failure) => failure,
+    };
 
-pub fn main() -> ExitCode {
-    if let Err(error) = run(env::args().skip(1)) {
-        match error {
-            Error::Scanner => ExitCode::from(65),
-            Error::MissingCommand => {}
-        }
-    } else {
-        ExitCode::SUCCESS
+    let (error, exit_code) = match failure {
+        Failure::Command(command_error) => (Some(command_error.to_string()), ExitCode::FAILURE),
+        Failure::Io(io_error) => (Some(io_error.to_string()), ExitCode::FAILURE),
+        Failure::Silent(exit_code) => (None, exit_code),
+    };
+
+    if let Some(message) = error {
+        eprintln!("{}{} {}", "error".bold().red(), ":".bold(), message.bold());
     }
+
+    exit_code
 }
 
-fn run(mut arguments: impl Iterator<Item = String>) -> Result<(), CommandError> {
-    match arguments
-        .next()
-        .ok_or(CommandError::MissingCommand)?
-        .as_str()
-    {
-        "help" => {
+fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
+    let command = Command::from_arguments(arguments).map_err(Failure::Command)?;
+
+    match command {
+        Command::Help => {
             println!("Help is coming (soon)!")
         }
 
-        "tokenize" => {
-            let filename = arguments.next().ok_or(Error::MissingFilename)?;
-            let input = fs::read_to_string(filename).map_err(CommandError::Io)?;
+        Command::Tokenize { filename } => {
+            let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let mut scanner = Scanner::new(&input);
             let mut failed = false;
 
-            for result in scanner {
+            for result in Scanner::new(&input) {
                 match result {
                     Ok(token) => println!("{token}"),
                     Err(error) => {
@@ -48,21 +54,49 @@ fn run(mut arguments: impl Iterator<Item = String>) -> Result<(), CommandError> 
             }
 
             if failed {
-                return Err(CommandError::Scanner);
+                return Err(Failure::Silent(ExitCode::from(65)));
             }
         }
 
-        unknown => return Err(CommandError::UnknownCommand(unknown.to_owned())),
+        Command::Parse { filename } => {
+            let input = fs::read_to_string(filename).map_err(Failure::Io)?;
+
+            let mut tokens = Vec::new();
+            let mut failed = false;
+
+            for result in Scanner::new(&input) {
+                match result {
+                    Ok(token) => tokens.push(token),
+                    Err(error) => {
+                        failed = true;
+                        eprintln!("{error}")
+                    }
+                }
+            }
+
+            if failed {
+                return Err(Failure::Silent(ExitCode::from(65)));
+            }
+
+            let mut parser = Parser::new(tokens);
+
+            match parser.parse() {
+                Ok(tree) => println!("{tree}"),
+                Err(error) => {
+                    // TODO multiple errors
+                    eprintln!("{error}");
+                    return Err(Failure::Silent(ExitCode::from(65)));
+                }
+            }
+        }
     }
 
     Ok(())
 }
 
 #[derive(Debug)]
-enum CommandError {
+enum Failure {
+    Command(CommandError),
     Io(io::Error),
-    MissingCommand,
-    MissingFilename,
-    Scanner,
-    UnknownCommand(String),
+    Silent(ExitCode),
 }
