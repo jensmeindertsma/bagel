@@ -2,12 +2,14 @@ use core::fmt::{self, Formatter};
 
 #[derive(Debug)]
 pub enum Tree {
+    Group(Box<Tree>),
     Primitive(Primitive),
 }
 
 impl fmt::Display for Tree {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Group(inside) => write!(f, "(group {inside})"),
             Self::Primitive(primitive) => primitive.fmt(f),
         }
     }

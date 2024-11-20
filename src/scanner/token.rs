@@ -1,6 +1,6 @@
 use core::fmt::{self, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     And,
     Bang,

@@ -33,16 +33,25 @@ where
             Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
             Token::String { value } => Tree::Primitive(Primitive::String(value)),
             Token::True => Tree::Primitive(Primitive::Boolean(true)),
+
+            Token::LeftParenthesis => {
+                let inside = self.parse_expression(0)?;
+
+                let next = self.tokens.next().ok_or(ParserError::UnexpectedEOF)?;
+                if next != Token::RightParenthesis {
+                    return Err(ParserError::UnexpectedToken(next));
+                }
+
+                Tree::Group(Box::new(inside))
+            }
             _ => todo!(),
         };
 
         // loop {
-        //     let operation = match self.tokens.peek() {
+        //     let token = match self.tokens.next() {
         //         None => break,
-        //         Some(operation) => operation,
+        //         Some(Token::RightParenthesis) => break,
         //     };
-
-        //     todo!()
         // }
 
         Ok(left_hand_side)
