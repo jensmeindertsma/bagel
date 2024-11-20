@@ -3,7 +3,7 @@ mod tree;
 use crate::scanner::Token;
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable};
-use tree::{Primitive, Tree};
+use tree::{Operator, Primitive, Tree};
 
 pub struct Parser<T>
 where
@@ -42,7 +42,29 @@ where
                     return Err(ParserError::UnexpectedToken(next));
                 }
 
-                Tree::Group(Box::new(inside))
+                Tree::Operation {
+                    operator: Operator::Group,
+                    expression: Box::new(inside),
+                }
+            }
+
+            token @ (Token::Bang | Token::Minus) => {
+                let operator = match token {
+                    Token::Bang => Operator::Not,
+                    Token::Minus => Operator::Negation,
+                    _ => unreachable!(),
+                };
+
+                let (_, Some(minimum_binding_power)) = operator.binding_power() else {
+                    panic!("failed to get operator binding power")
+                };
+
+                let expression = self.parse_expression(minimum_binding_power)?;
+
+                Tree::Operation {
+                    operator,
+                    expression: Box::new(expression),
+                }
             }
             _ => todo!(),
         };
