@@ -58,21 +58,25 @@ impl fmt::Display for Primitive {
 
 #[derive(Debug)]
 pub enum Operator {
+    Addition,
     Division,
     Group,
     Multiplication,
     Negation,
     Not,
+    Subtraction,
 }
 
 impl fmt::Display for Operator {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Addition => write!(f, "+"),
             Self::Division => write!(f, "/"),
             Self::Group => write!(f, "group"),
             Self::Multiplication => write!(f, "*"),
             Self::Negation => write!(f, "-"),
             Self::Not => write!(f, "!"),
+            Self::Subtraction => write!(f, "-"),
         }
     }
 }
@@ -80,7 +84,8 @@ impl fmt::Display for Operator {
 impl Operator {
     pub fn binding_power(&self) -> (Option<u8>, Option<u8>) {
         match self {
-            Self::Division | Self::Multiplication => (Some(32), Some(33)),
+            Self::Addition | Self::Subtraction => (Some(1), Some(2)),
+            Self::Division | Self::Multiplication => (Some(3), Some(4)),
             Self::Group => (None, None),
             Self::Negation | Self::Not => (None, Some(u8::MAX)),
         }

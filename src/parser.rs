@@ -29,9 +29,13 @@ where
     fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, ParserError> {
         let mut left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEOF)? {
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
+
             Token::Nil => Tree::Primitive(Primitive::Nil),
+
             Token::Number { value, .. } => Tree::Primitive(Primitive::Number(value)),
+
             Token::String { value } => Tree::Primitive(Primitive::String(value)),
+
             Token::True => Tree::Primitive(Primitive::Boolean(true)),
 
             Token::LeftParenthesis => {
@@ -77,7 +81,11 @@ where
 
             let operator = match self.tokens.peek() {
                 None | Some(Token::Eof) => break,
+
                 Some(Token::RightParenthesis) => break,
+
+                Some(Token::Minus) => Operator::Subtraction,
+                Some(Token::Plus) => Operator::Addition,
                 Some(Token::Slash) => Operator::Division,
                 Some(Token::Star) => Operator::Multiplication,
                 _ => todo!("unhandled operator"),

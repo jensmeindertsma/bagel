@@ -1,3 +1,4 @@
+mod addition;
 mod arithmetic;
 mod boolean;
 mod division;
@@ -8,3 +9,4 @@ mod not;
 mod number;
 mod parentheses;
 mod string;
+mod subtraction;
