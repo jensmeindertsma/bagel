@@ -3,7 +3,10 @@ mod tree;
 use crate::scanner::Token;
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable};
-use tree::{Operator, Primitive, Tree};
+use tree::{
+    ArithmeticOperator, ComparisonOperator, LogicalOperator, Operation, Operator, Primitive,
+    Strength, Tree,
+};
 
 pub struct Parser<T>
 where
@@ -27,7 +30,7 @@ where
     }
 
     fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, ParserError> {
-        let mut left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEOF)? {
+        let mut left_hand_side = match self.tokens.next().ok_or(ParserError::UnexpectedEof)? {
             Token::False => Tree::Primitive(Primitive::Boolean(false)),
 
             Token::Nil => Tree::Primitive(Primitive::Nil),
@@ -39,24 +42,31 @@ where
             Token::True => Tree::Primitive(Primitive::Boolean(true)),
 
             Token::LeftParenthesis => {
+                // A left parenthesis marks the beginning of a "group".
+
+                // First we parse the "inside" of the group. This will be
+                // terminated automatically by the presence of a right
+                // parenthesis. Inside the main loop below, encountering
+                // a right parenthesis will break out of the expression
+                // folding immediately.
                 let inside = self.parse_expression(0)?;
 
-                let next = self.tokens.next().ok_or(ParserError::UnexpectedEOF)?;
+                // Then we expect to see the right parenthesis.
+                let next = self.tokens.next().ok_or(ParserError::UnexpectedEof)?;
                 if next != Token::RightParenthesis {
                     return Err(ParserError::UnexpectedToken(next));
                 }
 
-                Tree::Operation {
-                    operator: Operator::Group,
-                    arguments: vec![inside],
-                }
+                Tree::Operation(Operation::Group(Box::new(inside)))
             }
 
             token @ (Token::Bang | Token::Minus) => {
+                // Here we catch a preceding bang or minus before an expression. These are
+                // logical operators which apply to the whole expression.
                 let operator = match token {
-                    Token::Bang => Operator::Not,
-                    Token::Minus => Operator::Negation,
-                    _ => unreachable!(),
+                    Token::Bang => LogicalOperator::Not,
+                    Token::Minus => LogicalOperator::Negate,
+                    _ => unreachable!("by above pattern match"),
                 };
 
                 let (_, Some(minimum_binding_power)) = operator.binding_power() else {
@@ -65,10 +75,10 @@ where
 
                 let expression = self.parse_expression(minimum_binding_power)?;
 
-                Tree::Operation {
+                Tree::Operation(Operation::Logical {
                     operator,
-                    arguments: vec![expression],
-                }
+                    expression: Box::new(expression),
+                })
             }
             _ => todo!("unhandled token"),
         };
@@ -79,15 +89,20 @@ where
             // until we find the point where the next operator binds weaker to the latest token
             // than we do. This marks the end of the folding loop.
 
-            let operator = match self.tokens.peek() {
+            let operator: Operator = match self.tokens.peek() {
                 None | Some(Token::Eof) => break,
 
                 Some(Token::RightParenthesis) => break,
 
-                Some(Token::Minus) => Operator::Subtraction,
-                Some(Token::Plus) => Operator::Addition,
-                Some(Token::Slash) => Operator::Division,
-                Some(Token::Star) => Operator::Multiplication,
+                Some(Token::Minus) => ArithmeticOperator::Subtract.into(),
+                Some(Token::Plus) => ArithmeticOperator::Add.into(),
+                Some(Token::Slash) => ArithmeticOperator::Divide.into(),
+                Some(Token::Star) => ArithmeticOperator::Multiply.into(),
+
+                Some(Token::Greater) => ComparisonOperator::GreaterThan.into(),
+                Some(Token::GreaterEqual) => ComparisonOperator::GreaterEqual.into(),
+                Some(Token::Less) => ComparisonOperator::LessThan.into(),
+                Some(Token::LessEqual) => ComparisonOperator::LessEqual.into(),
                 _ => todo!("unhandled operator"),
             };
 
@@ -107,10 +122,21 @@ where
 
             let right_hand_side = self.parse_expression(right_binding_power)?;
 
-            left_hand_side = Tree::Operation {
-                operator,
-                arguments: vec![left_hand_side, right_hand_side],
-            };
+            left_hand_side = Tree::Operation(match operator {
+                Operator::Arithmetic(operator) => Operation::Arithmetic {
+                    operator,
+                    a: Box::new(left_hand_side),
+                    b: Box::new(right_hand_side),
+                },
+
+                Operator::Comparison(operator) => Operation::Comparison {
+                    operator,
+                    a: Box::new(left_hand_side),
+                    b: Box::new(right_hand_side),
+                },
+
+                _ => unreachable!("by above match statement"),
+            })
         }
 
         Ok(left_hand_side)
@@ -119,14 +145,14 @@ where
 
 #[derive(Debug)]
 pub enum ParserError {
-    UnexpectedEOF,
+    UnexpectedEof,
     UnexpectedToken(Token),
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedEOF => write!(f, "unexpected EOF"),
+            Self::UnexpectedEof => write!(f, "unexpected EOF"),
             Self::UnexpectedToken(token) => {
                 write!(f, "found unexpected token `{token:?}`")
             }

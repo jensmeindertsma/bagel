@@ -1,6 +1,7 @@
 mod addition;
 mod arithmetic;
 mod boolean;
+mod comparison;
 mod division;
 mod multiplication;
 mod negation;
