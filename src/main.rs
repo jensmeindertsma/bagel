@@ -89,6 +89,33 @@ fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 }
             }
         }
+
+        Command::Play { input } => {
+            let mut tokens = Vec::new();
+
+            println!("{}", "=== TOKENIZATION ===".bold());
+            for result in Scanner::new(&input) {
+                match result {
+                    Ok(token) => {
+                        println!("{token}");
+                        tokens.push(token)
+                    }
+                    Err(error) => {
+                        eprintln!("{error}")
+                    }
+                }
+            }
+
+            println!("{}", "=== PARSING ===".bold());
+
+            let mut parser = Parser::new(tokens);
+            match parser.parse() {
+                Ok(tree) => println!("{tree}"),
+                Err(error) => {
+                    eprintln!("{error}");
+                }
+            }
+        }
     }
 
     Ok(())

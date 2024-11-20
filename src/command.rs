@@ -4,6 +4,7 @@ use std::error::Error;
 pub enum Command {
     Help,
     Parse { filename: String },
+    Play { input: String },
     Tokenize { filename: String },
 }
 
@@ -32,6 +33,14 @@ impl Command {
                     .ok_or(CommandError::MissingArgument("filename"))?;
 
                 Ok(Self::Parse { filename })
+            }
+
+            "play" => {
+                let input = arguments
+                    .next()
+                    .ok_or(CommandError::MissingArgument("input"))?;
+
+                Ok(Self::Play { input })
             }
 
             other => Err(CommandError::UnknownCommand(other.to_owned())),
