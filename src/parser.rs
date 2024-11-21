@@ -99,10 +99,12 @@ where
                 Some(Token::Slash) => ArithmeticOperator::Divide.into(),
                 Some(Token::Star) => ArithmeticOperator::Multiply.into(),
 
+                Some(Token::EqualEqual) => ComparisonOperator::Equal.into(),
                 Some(Token::Greater) => ComparisonOperator::GreaterThan.into(),
                 Some(Token::GreaterEqual) => ComparisonOperator::GreaterEqual.into(),
                 Some(Token::Less) => ComparisonOperator::LessThan.into(),
                 Some(Token::LessEqual) => ComparisonOperator::LessEqual.into(),
+                Some(Token::BangEqual) => ComparisonOperator::NotEqual.into(),
                 _ => todo!("unhandled operator"),
             };
 

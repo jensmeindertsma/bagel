@@ -49,10 +49,12 @@ pub enum ArithmeticOperator {
 
 #[derive(Debug)]
 pub enum ComparisonOperator {
+    Equal,
     GreaterThan,
     GreaterEqual,
     LessThan,
     LessEqual,
+    NotEqual,
 }
 
 #[derive(Debug)]
@@ -96,10 +98,12 @@ impl fmt::Display for ArithmeticOperator {
 impl fmt::Display for ComparisonOperator {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Equal => write!(f, "=="),
             Self::GreaterEqual => write!(f, ">="),
             Self::GreaterThan => write!(f, ">"),
             Self::LessEqual => write!(f, "<="),
             Self::LessThan => write!(f, "<"),
+            Self::NotEqual => write!(f, "!="),
         }
     }
 }
