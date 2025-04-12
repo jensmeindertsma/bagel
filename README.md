@@ -1,6 +1,6 @@
-# bagel 
+# 🥯 bagel 
 
-Interpreter implementation for the Lox programming language.
+Interpreter implementation for the Lox programming language. This is part of the CodeCrafter challenge "Build your own Interpreter" which provides step by step path to achieve this, with tests that must pass to continue to the next stage.
 
 ## Progress
 
