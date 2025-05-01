@@ -2,9 +2,9 @@ use core::fmt::{self, Formatter};
 use std::error::Error;
 
 pub enum Command {
+    Evaluate { filename: String },
     Help,
     Parse { filename: String },
-    Play { input: String },
     Tokenize { filename: String },
 }
 
@@ -17,15 +17,15 @@ impl Command {
             .ok_or(CommandError::MissingArgument("command"))?
             .as_str()
         {
-            "help" => Ok(Self::Help),
-
-            "tokenize" => {
+            "evaluate" => {
                 let filename = arguments
                     .next()
                     .ok_or(CommandError::MissingArgument("filename"))?;
 
-                Ok(Self::Tokenize { filename })
+                Ok(Self::Evaluate { filename })
             }
+
+            "help" => Ok(Self::Help),
 
             "parse" => {
                 let filename = arguments
@@ -35,12 +35,12 @@ impl Command {
                 Ok(Self::Parse { filename })
             }
 
-            "play" => {
-                let input = arguments
+            "tokenize" => {
+                let filename = arguments
                     .next()
-                    .ok_or(CommandError::MissingArgument("input"))?;
+                    .ok_or(CommandError::MissingArgument("filename"))?;
 
-                Ok(Self::Play { input })
+                Ok(Self::Tokenize { filename })
             }
 
             other => Err(CommandError::UnknownCommand(other.to_owned())),
