@@ -1,9 +1,9 @@
 use super::{
-    scanning::{Scanner, ScannerError},
+    scanner::{Scanner, ScannerError},
     token::Token,
 };
 
-pub fn tokenize(input: &str) -> Result<Vec<Token>, Vec<ScannerError>> {
+pub fn scan(input: &str) -> Result<Vec<Token>, Vec<ScannerError>> {
     let scanner = Scanner::new(input);
 
     let mut tokens = Vec::new();

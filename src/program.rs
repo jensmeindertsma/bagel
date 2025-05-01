@@ -1,19 +1,19 @@
 mod command;
-mod interpreting;
-mod parsing;
+mod interpreter;
+mod parser;
 mod printer;
-mod scanning;
+mod scanner;
 mod token;
 mod tree;
 mod utilities;
 
 use command::{Command, CommandError};
-use interpreting::Interpreter;
-use parsing::{Parser, ParserError};
+use interpreter::{Interpreter, InterpreterError};
+use parser::{Parser, ParserError};
 use printer::Printer;
-use scanning::{Scanner, ScannerError};
+use scanner::{Scanner, ScannerError};
 use std::{fs, io};
-use utilities::tokenize;
+use utilities::scan;
 
 pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
     let command = Command::from_arguments(arguments).map_err(Failure::InvalidCommand)?;
@@ -37,21 +37,20 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
             }
 
             if !errors.is_empty() {
-                return Err(Failure::Program(ProgramError::Tokenization(errors)));
+                return Err(Failure::Program(ProgramError::Scanner(errors)));
             }
         }
 
         Command::Parse { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let tokens =
-                tokenize(&input).map_err(|e| Failure::Program(ProgramError::Tokenization(e)))?;
+            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
 
             let mut parser = Parser::new(tokens);
 
             let tree = parser
                 .parse()
-                .map_err(|e| Failure::Program(ProgramError::Parsing(e)))?;
+                .map_err(|e| Failure::Program(ProgramError::Parser(e)))?;
 
             println!("{}", Printer::new(&tree).print());
         }
@@ -59,18 +58,21 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
         Command::Evaluate { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let tokens =
-                tokenize(&input).map_err(|e| Failure::Program(ProgramError::Tokenization(e)))?;
+            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
 
             let mut parser = Parser::new(tokens);
 
             let tree = parser
                 .parse()
-                .map_err(|e| Failure::Program(ProgramError::Parsing(e)))?;
+                .map_err(|e| Failure::Program(ProgramError::Parser(e)))?;
 
             let mut interpreter = Interpreter::new(tree);
 
-            interpreter.evaluate();
+            let value = interpreter
+                .evaluate()
+                .map_err(|e| Failure::Program(ProgramError::Interpreter(e)))?;
+
+            println!("{value}");
         }
     }
 
@@ -86,6 +88,7 @@ pub enum Failure {
 
 #[derive(Debug)]
 pub enum ProgramError {
-    Tokenization(Vec<ScannerError>),
-    Parsing(ParserError),
+    Scanner(Vec<ScannerError>),
+    Parser(ParserError),
+    Interpreter(InterpreterError),
 }

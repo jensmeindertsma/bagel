@@ -75,7 +75,7 @@ impl<'a> Visitor<String> for Printer<'a> {
                 if value.fract() == 0.0 {
                     format!("{value:.1}")
                 } else {
-                    format!("{value:.2}")
+                    format!("{value}")
                 }
             }
             Primitive::String(string) => string.clone(),

@@ -18,15 +18,20 @@ pub fn main() -> impl Termination {
     let (error, exit_code) = match failure {
         Failure::InvalidCommand(error) => (Some(error.to_string()), ExitCode::FAILURE),
         Failure::Io(error) => (Some(error.to_string()), ExitCode::FAILURE),
-        Failure::Program(program_error) => match program_error {
-            ProgramError::Tokenization(errors) => {
+        Failure::Program(error) => match error {
+            ProgramError::Scanner(errors) => {
                 for error in errors {
                     eprintln!("{error}")
                 }
 
                 return ExitCode::from(65);
             }
-            ProgramError::Parsing(error) => {
+            ProgramError::Parser(error) => {
+                eprintln!("{error}");
+
+                return ExitCode::from(65);
+            }
+            ProgramError::Interpreter(error) => {
                 eprintln!("{error}");
 
                 return ExitCode::from(65);
