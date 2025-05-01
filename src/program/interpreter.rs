@@ -63,7 +63,7 @@ pub struct InterpreterError {
 }
 
 impl InterpreterError {
-    pub fn new(kind: ErrorKind, line: usize) -> Self {
+    fn new(kind: ErrorKind, line: usize) -> Self {
         Self { kind, line }
     }
 }

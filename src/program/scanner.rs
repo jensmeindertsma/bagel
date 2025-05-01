@@ -226,6 +226,9 @@ pub enum ScannerError {
 
 impl fmt::Display for ScannerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        // Ideally I would format the error similar to `ParserError``
+        // and `InterpreterError` with line number at the end but
+        // CodeCrafters test case does not allow for this.
         match self {
             Self::UnknownCharacter { character, line } => {
                 write!(f, "[line {line}] Error: Unexpected character: {character}")

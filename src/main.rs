@@ -25,16 +25,28 @@ pub fn main() -> impl Termination {
                 }
 
                 return ExitCode::from(65);
+
+                // Ideally I would format the error nicely, but CodeCrafters
+                // test case does not allow for this: we have to print directly.
+                // (error, ExitCode::from(65))
             }
             ProgramError::Parser(error) => {
                 eprintln!("{error}");
 
                 return ExitCode::from(65);
+
+                // Ideally I would format the error nicely, but CodeCrafters
+                // test case does not allow for this: we have to print directly.
+                // (error, ExitCode::from(65))
             }
             ProgramError::Interpreter(error) => {
                 eprintln!("{error}");
 
                 return ExitCode::from(70);
+
+                // Ideally I would format the error nicely, but CodeCrafters
+                // test case does not allow for this: we have to print directly.
+                // (error, ExitCode::from(70))
             }
         },
     };

@@ -33,7 +33,10 @@ where
 
     fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, ParserError> {
         let mut left_hand_side = {
-            let token = self.tokens.next().ok_or(ParserError::UnexpectedEof)?;
+            let token = self
+                .tokens
+                .next()
+                .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
 
             let tree = match token.kind {
                 TokenKind::False => {
@@ -62,11 +65,21 @@ where
                     // folding immediately.
                     let inside = self.parse_expression(0)?;
 
+                    let mut line = inside.line;
+
                     // Then we expect to see the right parenthesis.
-                    let next = self.tokens.next().ok_or(ParserError::UnexpectedEof)?;
+                    let next = self
+                        .tokens
+                        .next()
+                        .ok_or(ParserError::new(ErrorKind::UnexpectedEof, line))?;
+
+                    line = next.line;
 
                     if next.kind != TokenKind::RightParenthesis {
-                        return Err(ParserError::UnexpectedTokenKind(next.kind));
+                        return Err(ParserError::new(
+                            ErrorKind::UnexpectedTokenKind(next.kind),
+                            line,
+                        ));
                     }
 
                     Tree::new(
@@ -100,7 +113,10 @@ where
                 }
 
                 unexpected_token => {
-                    return Err(ParserError::UnexpectedTokenKind(unexpected_token));
+                    return Err(ParserError::new(
+                        ErrorKind::UnexpectedTokenKind(unexpected_token),
+                        token.line,
+                    ));
                 }
             };
 
@@ -177,17 +193,33 @@ where
 }
 
 #[derive(Debug)]
-pub enum ParserError {
+pub struct ParserError {
+    kind: ErrorKind,
+    line: usize,
+}
+
+impl ParserError {
+    fn new(kind: ErrorKind, line: usize) -> Self {
+        Self { kind, line }
+    }
+}
+
+#[derive(Debug)]
+pub enum ErrorKind {
     UnexpectedEof,
     UnexpectedTokenKind(TokenKind),
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnexpectedEof => write!(f, "unexpected EOF"),
-            Self::UnexpectedTokenKind(token) => {
-                write!(f, "found unexpected token `{token:?}`")
+        match &self.kind {
+            ErrorKind::UnexpectedEof => write!(f, "unexpected EOF\n[line {}]", self.line),
+            ErrorKind::UnexpectedTokenKind(token) => {
+                write!(
+                    f,
+                    "found unexpected token `{token:?}`\n[line {}]",
+                    self.line
+                )
             }
         }
     }
