@@ -3,27 +3,14 @@ use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
 #[test]
-fn string() {
-    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
-
-    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
-
-    write!(file, "(\"hello world!\")").unwrap();
-
-    cmd.assert()
-        .success()
-        .stdout(predicate::eq("hello world!\n"));
-}
-
-#[test]
 fn boolean() {
     let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    write!(file, "(true)").unwrap();
+    write!(file, "!true").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq("true\n"));
+    cmd.assert().success().stdout(predicate::eq("false\n"));
 }
 
 #[test]
@@ -32,18 +19,18 @@ fn number() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    write!(file, "(10.40)").unwrap();
+    write!(file, "!10.40").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq("10.4\n"));
+    cmd.assert().success().stdout(predicate::eq("false\n"));
 }
 
 #[test]
-fn double_wrapped() {
+fn double_wrapped_boolean() {
     let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    write!(file, "((false))").unwrap();
+    write!(file, "!((false))").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq("false\n"));
+    cmd.assert().success().stdout(predicate::eq("true\n"));
 }

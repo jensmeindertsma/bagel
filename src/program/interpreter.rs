@@ -1,5 +1,8 @@
 use super::tree::{
-    operation::Operation, operator::ArithmeticOperator, primitive::Primitive, visitor::Visitor,
+    operation::Operation,
+    operator::{ArithmeticOperator, LogicalOperator},
+    primitive::Primitive,
+    visitor::Visitor,
     Tree,
 };
 use std::{
@@ -55,14 +58,30 @@ impl fmt::Display for Value {
 
 #[derive(Debug)]
 pub enum InterpreterError {
-    InvalidAddition(Value, Value),
+    Addition(Value, Value),
+    Division(Value, Value),
+    Multiplication(Value, Value),
+    Subtraction(Value, Value),
+    Negation(Value),
 }
 
 impl fmt::Display for InterpreterError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidAddition(a, b) => {
-                write!(f, "invalid addition of {a} and {b}")
+            Self::Addition(a, b) => {
+                write!(f, "invalid addition `{a}` + `{b}`")
+            }
+            Self::Division(a, b) => {
+                write!(f, "invalid division `{a}` / `{b}`")
+            }
+            Self::Multiplication(a, b) => {
+                write!(f, "invalid multiplication `{a}` * `{b}`")
+            }
+            Self::Subtraction(a, b) => {
+                write!(f, "invalid subtraction `{a}` - `{b}`")
+            }
+            Self::Negation(value) => {
+                write!(f, "invalid negation of `{value}`")
             }
         }
     }
@@ -80,20 +99,27 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                 let a = self.visit_tree(a)?;
                 let b = self.visit_tree(b)?;
 
-                match (&a, &b, operator) {
-                    (Value::Number(a), Value::Number(b), ArithmeticOperator::Add) => {
+                match (operator, &a, &b) {
+                    (ArithmeticOperator::Add, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Number(a + b))
                     }
-                    (Value::Number(a), Value::Number(b), ArithmeticOperator::Divide) => {
+
+                    (ArithmeticOperator::Divide, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Number(a / b))
                     }
-                    (Value::Number(a), Value::Number(b), ArithmeticOperator::Multiply) => {
+                    (ArithmeticOperator::Multiply, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Number(a * b))
                     }
-                    (Value::Number(a), Value::Number(b), ArithmeticOperator::Subtract) => {
+                    (ArithmeticOperator::Subtract, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Number(a - b))
                     }
-                    _ => Err(InterpreterError::InvalidAddition(a, b)),
+
+                    _ => match operator {
+                        ArithmeticOperator::Add => Err(InterpreterError::Addition(a, b)),
+                        ArithmeticOperator::Divide => Err(InterpreterError::Division(a, b)),
+                        ArithmeticOperator::Multiply => Err(InterpreterError::Multiplication(a, b)),
+                        ArithmeticOperator::Subtract => Err(InterpreterError::Subtraction(a, b)),
+                    },
                 }
             }
             Operation::Comparison {
@@ -103,9 +129,22 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
             } => todo!(),
             Operation::Group(group) => self.visit_tree(group),
             Operation::Logical {
-                operator: _,
-                expression: _,
-            } => todo!(),
+                operator,
+                expression,
+            } => {
+                let value = self.visit_tree(expression)?;
+
+                match (operator, &value) {
+                    (LogicalOperator::Negate, Value::Number(number)) => Ok(Value::Number(-number)),
+                    (LogicalOperator::Negate, _) => Err(InterpreterError::Negation(value)),
+                    (LogicalOperator::Not, value) => Ok(Value::Boolean(match value {
+                        Value::Boolean(value) => !value,
+                        Value::Nil => true,
+                        Value::Number(_) => false,
+                        Value::String(_) => false,
+                    })),
+                }
+            }
         }
     }
 
