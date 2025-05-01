@@ -37,7 +37,7 @@ impl From<LogicalOperator> for Operator {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ArithmeticOperator {
     Add,
     Divide,
@@ -45,17 +45,17 @@ pub enum ArithmeticOperator {
     Subtract,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ComparisonOperator {
     Equal,
-    GreaterThan,
     GreaterEqual,
-    LessThan,
+    GreaterThan,
     LessEqual,
+    LessThan,
     NotEqual,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LogicalOperator {
     Negate,
     Not,

@@ -1,6 +1,6 @@
 use super::tree::{
     operation::Operation,
-    operator::{ArithmeticOperator, LogicalOperator},
+    operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
     primitive::Primitive,
     visitor::Visitor,
     Tree,
@@ -59,6 +59,11 @@ impl fmt::Display for Value {
 #[derive(Debug)]
 pub enum InterpreterError {
     Addition(Value, Value),
+    Comparison {
+        operator: ComparisonOperator,
+        a: Value,
+        b: Value,
+    },
     Division(Value, Value),
     Multiplication(Value, Value),
     Subtraction(Value, Value),
@@ -71,6 +76,14 @@ impl fmt::Display for InterpreterError {
             Self::Addition(a, b) => {
                 write!(f, "invalid addition `{a}` + `{b}`")
             }
+            Self::Comparison { operator, a, b } => match operator {
+                ComparisonOperator::Equal => write!(f, "invalid comparison `{a}` == `{b}`"),
+                ComparisonOperator::GreaterEqual => write!(f, "invalid comparison `{a}` >= `{b}`"),
+                ComparisonOperator::GreaterThan => write!(f, "invalid comparison `{a}` > `{b}`"),
+                ComparisonOperator::LessEqual => write!(f, "invalid comparison `{a}` <= `{b}`"),
+                ComparisonOperator::LessThan => write!(f, "invalid comparison `{a}` < `{b}`"),
+                ComparisonOperator::NotEqual => write!(f, "invalid comparison `{a}` != `{b}`"),
+            },
             Self::Division(a, b) => {
                 write!(f, "invalid division `{a}` / `{b}`")
             }
@@ -100,6 +113,9 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                 let b = self.visit_tree(b)?;
 
                 match (operator, &a, &b) {
+                    // String concatenation overloads the `+` operator so it
+                    // must come before the numeric addition operator using the
+                    // same keyword.
                     (ArithmeticOperator::Add, Value::String(a), Value::String(b)) => {
                         let mut new = a.clone();
                         new.push_str(b);
@@ -128,11 +144,36 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                     },
                 }
             }
-            Operation::Comparison {
-                operator: _,
-                a: _,
-                b: _,
-            } => todo!(),
+            Operation::Comparison { operator, a, b } => {
+                let a = self.visit_tree(a)?;
+                let b = self.visit_tree(b)?;
+
+                match (operator, a, b) {
+                    (ComparisonOperator::Equal, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a == b))
+                    }
+                    (ComparisonOperator::GreaterEqual, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a >= b))
+                    }
+                    (ComparisonOperator::GreaterThan, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a > b))
+                    }
+                    (ComparisonOperator::LessEqual, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a <= b))
+                    }
+                    (ComparisonOperator::LessThan, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a < b))
+                    }
+                    (ComparisonOperator::NotEqual, Value::Number(a), Value::Number(b)) => {
+                        Ok(Value::Boolean(a != b))
+                    }
+                    (operator, a, b) => Err(InterpreterError::Comparison {
+                        operator: *operator,
+                        a,
+                        b,
+                    }),
+                }
+            }
             Operation::Group(group) => self.visit_tree(group),
             Operation::Logical {
                 operator,
