@@ -1,11 +1,19 @@
 mod command;
-mod parser;
-mod scanner;
+mod interpreting;
+mod parsing;
+mod printer;
+mod scanning;
+mod token;
+mod tree;
+mod utilities;
 
 use command::{Command, CommandError};
-use parser::{Parser, ParserError};
-use scanner::{Scanner, ScannerError, Token};
+use interpreting::Interpreter;
+use parsing::{Parser, ParserError};
+use printer::Printer;
+use scanning::{Scanner, ScannerError};
 use std::{fs, io};
+use utilities::tokenize;
 
 pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
     let command = Command::from_arguments(arguments).map_err(Failure::InvalidCommand)?;
@@ -45,7 +53,7 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 .parse()
                 .map_err(|e| Failure::Program(ProgramError::Parsing(e)))?;
 
-            println!("{tree}")
+            Printer::new(&tree).print();
         }
 
         Command::Evaluate { filename } => {
@@ -60,9 +68,9 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 .parse()
                 .map_err(|e| Failure::Program(ProgramError::Parsing(e)))?;
 
-            println!("Evaluating tree: {tree:?}");
+            let mut interpreter = Interpreter::new(tree);
 
-            todo!()
+            interpreter.evaluate();
         }
     }
 
@@ -74,26 +82,6 @@ pub enum Failure {
     InvalidCommand(CommandError),
     Program(ProgramError),
     Io(io::Error),
-}
-
-fn tokenize(input: &str) -> Result<Vec<Token>, Vec<ScannerError>> {
-    let scanner = Scanner::new(input);
-
-    let mut tokens = Vec::new();
-    let mut errors = Vec::new();
-
-    for output in scanner {
-        match output {
-            Ok(token) => tokens.push(token),
-            Err(error) => errors.push(error),
-        }
-    }
-
-    if !errors.is_empty() {
-        Err(errors)
-    } else {
-        Ok(tokens)
-    }
 }
 
 #[derive(Debug)]

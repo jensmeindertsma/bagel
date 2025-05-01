@@ -1,12 +1,14 @@
-mod tree;
-
-use super::Token;
+use super::{
+    token::Token,
+    tree::{
+        operation::Operation,
+        operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator, Operator, Strength},
+        primitive::Primitive,
+        Tree,
+    },
+};
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable};
-use tree::{
-    ArithmeticOperator, ComparisonOperator, LogicalOperator, Operation, Operator, Primitive,
-    Strength, Tree,
-};
 
 pub struct Parser<T>
 where

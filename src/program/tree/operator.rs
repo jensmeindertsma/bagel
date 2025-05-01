@@ -1,5 +1,3 @@
-use core::fmt::{self, Formatter};
-
 #[derive(Debug)]
 pub enum Operator {
     Arithmetic(ArithmeticOperator),
@@ -81,38 +79,5 @@ impl Strength for ComparisonOperator {
 impl Strength for LogicalOperator {
     fn binding_power(&self) -> (Option<u8>, Option<u8>) {
         (None, Some(u8::MAX))
-    }
-}
-
-impl fmt::Display for ArithmeticOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Add => write!(f, "+"),
-            Self::Divide => write!(f, "/"),
-            Self::Multiply => write!(f, "*"),
-            Self::Subtract => write!(f, "-"),
-        }
-    }
-}
-
-impl fmt::Display for ComparisonOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Equal => write!(f, "=="),
-            Self::GreaterEqual => write!(f, ">="),
-            Self::GreaterThan => write!(f, ">"),
-            Self::LessEqual => write!(f, "<="),
-            Self::LessThan => write!(f, "<"),
-            Self::NotEqual => write!(f, "!="),
-        }
-    }
-}
-
-impl fmt::Display for LogicalOperator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Negate => write!(f, "-"),
-            Self::Not => write!(f, "!"),
-        }
     }
 }

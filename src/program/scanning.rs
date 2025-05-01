@@ -1,8 +1,6 @@
-mod token;
-
+use super::token::Token;
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable, str::Chars};
-pub use token::Token;
 
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
