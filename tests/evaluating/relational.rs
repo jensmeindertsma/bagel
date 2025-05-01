@@ -45,3 +45,58 @@ fn four() {
 
     cmd.assert().success().stdout(predicate::eq("true\n"));
 }
+
+#[test]
+fn five() {
+    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
+
+    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
+
+    write!(file, "156 == (89 + 67)").unwrap();
+
+    cmd.assert().success().stdout(predicate::eq("true\n"));
+}
+
+#[test]
+fn six() {
+    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
+
+    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
+
+    write!(file, "\"hello\" == \"world\"").unwrap();
+
+    cmd.assert().success().stdout(predicate::eq("false\n"));
+}
+
+#[test]
+fn seven() {
+    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
+
+    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
+
+    write!(file, "\"foo\" != \"bar\"").unwrap();
+
+    cmd.assert().success().stdout(predicate::eq("true\n"));
+}
+
+#[test]
+fn eight() {
+    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
+
+    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
+
+    write!(file, "\"foo\" == \"foo\"").unwrap();
+
+    cmd.assert().success().stdout(predicate::eq("true\n"));
+}
+
+#[test]
+fn nine() {
+    let (mut cmd, temp_dir) = setup_command_environment(["evaluate", "test.lox"]);
+
+    let mut file = File::create(temp_dir.join("test.lox")).unwrap();
+
+    write!(file, "61 == \"61\"").unwrap();
+
+    cmd.assert().success().stdout(predicate::eq("false\n"));
+}

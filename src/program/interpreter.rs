@@ -31,7 +31,7 @@ impl Interpreter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
     Boolean(bool),
     Nil,
@@ -144,14 +144,13 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                     },
                 }
             }
+
             Operation::Comparison { operator, a, b } => {
                 let a = self.visit_tree(a)?;
                 let b = self.visit_tree(b)?;
 
                 match (operator, a, b) {
-                    (ComparisonOperator::Equal, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a == b))
-                    }
+                    (ComparisonOperator::Equal, a, b) => Ok(Value::Boolean(a == b)),
                     (ComparisonOperator::GreaterEqual, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Boolean(a >= b))
                     }
@@ -164,9 +163,7 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                     (ComparisonOperator::LessThan, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Boolean(a < b))
                     }
-                    (ComparisonOperator::NotEqual, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a != b))
-                    }
+                    (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
                     (operator, a, b) => Err(InterpreterError::Comparison {
                         operator: *operator,
                         a,
@@ -174,7 +171,9 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                     }),
                 }
             }
+
             Operation::Group(group) => self.visit_tree(group),
+
             Operation::Logical {
                 operator,
                 expression,
