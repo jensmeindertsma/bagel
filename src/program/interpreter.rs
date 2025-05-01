@@ -105,12 +105,13 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                         Ok(Value::Boolean(a < b))
                     }
                     (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
-                    (operator, a, b) => Err(InterpreterError::new(
-                        ErrorKind::Comparison {
-                            operator: *operator,
-                            a,
-                            b,
-                        },
+                    (_operator, _a, _b) => Err(InterpreterError::new(
+                        // ErrorKind::Comparison {
+                        //     operator: *operator,
+                        //     a,
+                        //     b,
+                        // },
+                        ErrorKind::Comparison,
                         line,
                     )),
                 }
@@ -195,11 +196,12 @@ impl InterpreterError {
 #[derive(Debug)]
 pub enum ErrorKind {
     Addition(Value, Value),
-    Comparison {
-        operator: ComparisonOperator,
-        a: Value,
-        b: Value,
-    },
+    // Comparison {
+    //     operator: ComparisonOperator,
+    //     a: Value,
+    //     b: Value,
+    // },
+    Comparison,
     Division(Value, Value),
     Multiplication(Value, Value),
     Subtraction(Value, Value),
@@ -212,25 +214,21 @@ impl fmt::Display for InterpreterError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ErrorKind::Addition(_a, _b) => {
-                write!(f, "Operand must be numbers.\n[line {}]", self.line)
+                write!(
+                    f,
+                    "Operands must be two numbers or two strings.\n[line {}]",
+                    self.line
+                )
             }
-            ErrorKind::Comparison { operator, a, b } => match operator {
-                ComparisonOperator::Equal => write!(f, "invalid comparison `{a}` == `{b}`"),
-                ComparisonOperator::GreaterEqual => write!(f, "invalid comparison `{a}` >= `{b}`"),
-                ComparisonOperator::GreaterThan => write!(f, "invalid comparison `{a}` > `{b}`"),
-                ComparisonOperator::LessEqual => write!(f, "invalid comparison `{a}` <= `{b}`"),
-                ComparisonOperator::LessThan => write!(f, "invalid comparison `{a}` < `{b}`"),
-                ComparisonOperator::NotEqual => write!(f, "invalid comparison `{a}` != `{b}`"),
-            },
-            ErrorKind::Division(_a, _b) => {
+            // Here I would extract `operator`, `a` and `b` and print different
+            // error messages based on the operator.
+            ErrorKind::Comparison => write!(f, "Operands must be numbers.\n[line {}]", self.line),
+            ErrorKind::Division(_a, _b)
+            | ErrorKind::Multiplication(_a, _b)
+            | ErrorKind::Subtraction(_a, _b) => {
                 write!(f, "Operands must be numbers.\n[line {}]", self.line)
             }
-            ErrorKind::Multiplication(_a, _b) => {
-                write!(f, "Operands must be numbers.\n[line {}]", self.line)
-            }
-            ErrorKind::Subtraction(_a, _b) => {
-                write!(f, "Operands must be numbers.\n[line {}]", self.line)
-            }
+
             ErrorKind::Negation(_value) => {
                 write!(f, "Operand must be a number.\n[line {}]", self.line)
             }
