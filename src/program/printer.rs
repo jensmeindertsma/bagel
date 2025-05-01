@@ -71,7 +71,13 @@ impl<'a> Visitor<String> for Printer<'a> {
         match primitive {
             Primitive::Boolean(value) => value.to_string(),
             Primitive::Nil => "nil".to_owned(),
-            Primitive::Number(value) => value.to_string(),
+            Primitive::Number(value) => {
+                if value.fract() == 0.0 {
+                    format!("{value:.1}")
+                } else {
+                    format!("{value:.2}")
+                }
+            }
             Primitive::String(string) => string.clone(),
         }
     }

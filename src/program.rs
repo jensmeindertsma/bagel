@@ -53,7 +53,7 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 .parse()
                 .map_err(|e| Failure::Program(ProgramError::Parsing(e)))?;
 
-            Printer::new(&tree).print();
+            println!("{}", Printer::new(&tree).print());
         }
 
         Command::Evaluate { filename } => {
