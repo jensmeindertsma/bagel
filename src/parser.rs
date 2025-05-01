@@ -80,7 +80,10 @@ where
                     expression: Box::new(expression),
                 })
             }
-            _ => todo!("unhandled token"),
+
+            unexpected_token => {
+                return Err(ParserError::UnexpectedToken(unexpected_token));
+            }
         };
 
         loop {

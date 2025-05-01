@@ -83,7 +83,6 @@ fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
             match parser.parse() {
                 Ok(tree) => println!("{tree}"),
                 Err(error) => {
-                    // TODO multiple errors
                     eprintln!("{error}");
                     return Err(Failure::Silent(ExitCode::from(65)));
                 }

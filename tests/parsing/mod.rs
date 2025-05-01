@@ -3,6 +3,8 @@ mod arithmetic;
 mod boolean;
 mod comparison;
 mod division;
+mod equality;
+mod errors;
 mod multiplication;
 mod negation;
 mod nil;
