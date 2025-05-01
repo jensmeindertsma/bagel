@@ -9,5 +9,6 @@ mod not;
 mod number;
 mod parentheses;
 mod relational;
+mod relational_error;
 mod string;
 mod unary_error;
