@@ -12,7 +12,9 @@ use std::{
 };
 
 pub fn main() -> impl Termination {
-    let failure = match run(env::args().skip(1)) {
+    let show_colors = !matches!(env::var("NO_COLORS"), Ok(value) if value == "true");
+
+    let failure = match run(env::args().skip(1), show_colors) {
         Ok(_) => return ExitCode::SUCCESS,
         Err(failure) => failure,
     };
@@ -24,13 +26,17 @@ pub fn main() -> impl Termination {
     };
 
     if let Some(message) = error {
-        eprintln!("{}{} {}", "error".bold().red(), ":".bold(), message.bold());
+        if show_colors {
+            eprintln!("{}{} {}", "error".bold().red(), ":".bold(), message.bold());
+        } else {
+            eprintln!("error: {message}");
+        }
     }
 
     exit_code
 }
 
-fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
+fn run(arguments: impl Iterator<Item = String>, show_colors: bool) -> Result<(), Failure> {
     let command = Command::from_arguments(arguments).map_err(Failure::Command)?;
 
     match command {
@@ -92,7 +98,12 @@ fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
         Command::Play { input } => {
             let mut tokens = Vec::new();
 
-            println!("{}", "=== TOKENIZATION ===".bold());
+            if show_colors {
+                println!("{}", "=== TOKENIZATION ===".bold());
+            } else {
+                println!("=== TOKENIZATION ===");
+            }
+
             for result in Scanner::new(&input) {
                 match result {
                     Ok(token) => {
@@ -105,7 +116,11 @@ fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 }
             }
 
-            println!("{}", "=== PARSING ===".bold());
+            if show_colors {
+                println!("{}", "=== PARSING ===".bold());
+            } else {
+                println!("=== PARSING ===");
+            }
 
             let mut parser = Parser::new(tokens);
             match parser.parse() {

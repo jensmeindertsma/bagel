@@ -13,6 +13,8 @@ where
         cmd.arg(argument);
     }
 
+    cmd.env("NO_COLORS", "true");
+
     let temporary_directory = TempDir::new().unwrap();
 
     cmd.current_dir(&temporary_directory);
