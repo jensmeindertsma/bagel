@@ -79,6 +79,7 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
             Operation::Arithmetic { operator, a, b } => {
                 let a = self.visit_tree(a)?;
                 let b = self.visit_tree(b)?;
+
                 match (&a, &b, operator) {
                     (Value::Number(a), Value::Number(b), ArithmeticOperator::Add) => {
                         Ok(Value::Number(a + b))
