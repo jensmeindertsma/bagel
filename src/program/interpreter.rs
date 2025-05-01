@@ -100,6 +100,12 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                 let b = self.visit_tree(b)?;
 
                 match (operator, &a, &b) {
+                    (ArithmeticOperator::Add, Value::String(a), Value::String(b)) => {
+                        let mut new = a.clone();
+                        new.push_str(b);
+                        Ok(Value::String(new))
+                    }
+
                     (ArithmeticOperator::Add, Value::Number(a), Value::Number(b)) => {
                         Ok(Value::Number(a + b))
                     }
