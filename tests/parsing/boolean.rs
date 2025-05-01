@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::setup_command_environment;
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,11 +10,7 @@ fn true_test() {
 
     write!(file, "true").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
-        true
-        ",
-    )));
+    cmd.assert().success().stdout(predicate::eq("true\n"));
 }
 
 #[test]
@@ -25,9 +21,5 @@ fn false_test() {
 
     write!(file, "false").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
-        false
-        ",
-    )));
+    cmd.assert().success().stdout(predicate::eq("false\n"));
 }

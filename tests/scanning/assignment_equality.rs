@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{multiline_output, setup_command_environment};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -12,8 +12,10 @@ fn assignment_equality_operators() {
 
     write!(file, "{contents}").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(multiline_output(
+            "
         EQUAL = null
         LEFT_BRACE { null
         EQUAL_EQUAL == null
@@ -21,5 +23,5 @@ fn assignment_equality_operators() {
         RIGHT_BRACE } null
         EOF  null
         ",
-    )));
+        )));
 }

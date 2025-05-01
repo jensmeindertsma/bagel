@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{setup_command_environment, multiline_output};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -8,7 +8,7 @@ fn multi_line_error() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = trim_string(
+    let contents = multiline_output(
         "
         # (
         )   @
@@ -19,14 +19,14 @@ fn multi_line_error() {
 
     cmd.assert()
         .failure()
-        .stdout(predicate::eq(trim_string(
+        .stdout(predicate::eq(multiline_output(
             "
             LEFT_PAREN ( null
             RIGHT_PAREN ) null
             EOF  null
             ",
         )))
-        .stderr(predicate::eq(trim_string(
+        .stderr(predicate::eq(multiline_output(
             "
             [line 1] Error: Unexpected character: #
             [line 2] Error: Unexpected character: @

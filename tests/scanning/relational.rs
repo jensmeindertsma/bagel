@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{multiline_output, setup_command_environment};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,13 +10,15 @@ fn relational_operators() {
 
     write!(file, "<<=>>=").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(multiline_output(
+            "
         LESS < null
         LESS_EQUAL <= null
         GREATER > null
         GREATER_EQUAL >= null
         EOF  null
         ",
-    )));
+        )));
 }

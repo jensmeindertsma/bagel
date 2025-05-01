@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{setup_command_environment, multiline_output};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,7 +10,7 @@ fn negation_inequality_operators() {
 
     write!(file, "!!===").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
+    cmd.assert().success().stdout(predicate::eq(multiline_output(
         "
         BANG ! null
         BANG_EQUAL != null

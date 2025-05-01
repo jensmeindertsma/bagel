@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::setup_command_environment;
 use predicates::prelude::*;
 use std::fs::File;
 
@@ -8,9 +8,5 @@ fn empty_file() {
 
     File::create(temp_dir.join("test.lox")).unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
-        EOF  null
-        ",
-    )));
+    cmd.assert().success().stdout(predicate::eq("EOF  null\n"));
 }

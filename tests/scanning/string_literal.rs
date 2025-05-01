@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{setup_command_environment, multiline_output};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,7 +10,7 @@ fn string() {
 
     write!(file, "\"foo baz\"").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
+    cmd.assert().success().stdout(predicate::eq(multiline_output(
         "
         STRING \"foo baz\" foo baz
         EOF  null
@@ -30,12 +30,12 @@ fn unterminated_string() {
 
     cmd.assert()
         .failure()
-        .stdout(predicate::eq(trim_string(
+        .stdout(predicate::eq(multiline_output(
             "
             EOF  null
             ",
         )))
-        .stderr(predicate::eq(trim_string(
+        .stderr(predicate::eq(multiline_output(
             "
             [line 1] Error: Unterminated string.
             ",

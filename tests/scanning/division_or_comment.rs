@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{setup_command_environment, multiline_output};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -10,7 +10,7 @@ fn comment() {
 
     write!(file, "() // Comment").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
+    cmd.assert().success().stdout(predicate::eq(multiline_output(
         "
         LEFT_PAREN ( null
         RIGHT_PAREN ) null
@@ -29,7 +29,7 @@ fn slash() {
 
     write!(file, "{contents}").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
+    cmd.assert().success().stdout(predicate::eq(multiline_output(
         "
             SLASH / null
             LEFT_PAREN ( null

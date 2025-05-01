@@ -1,4 +1,4 @@
-use crate::support::{setup_command_environment, trim_string};
+use crate::support::{multiline_output, setup_command_environment};
 use predicates::prelude::*;
 use std::{fs::File, io::Write};
 
@@ -12,13 +12,15 @@ fn comment() {
 
     write!(file, "{contents}").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
-            LEFT_PAREN ( null
-            RIGHT_PAREN ) null
-            EOF  null
-            ",
-    )));
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(multiline_output(
+            "
+        LEFT_PAREN ( null
+        RIGHT_PAREN ) null
+        EOF  null
+        ",
+        )));
 }
 
 #[test]
@@ -27,7 +29,7 @@ fn slash() {
 
     let mut file = File::create(temp_dir.join("test.lox")).unwrap();
 
-    let contents = trim_string(
+    let contents = multiline_output(
         "
         (   
          )
@@ -36,11 +38,13 @@ fn slash() {
 
     write!(file, "{contents}").unwrap();
 
-    cmd.assert().success().stdout(predicate::eq(trim_string(
-        "
+    cmd.assert()
+        .success()
+        .stdout(predicate::eq(multiline_output(
+            "
         LEFT_PAREN ( null
         RIGHT_PAREN ) null
         EOF  null
         ",
-    )));
+        )));
 }
