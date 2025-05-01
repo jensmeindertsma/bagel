@@ -101,7 +101,7 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                 a: _,
                 b: _,
             } => todo!(),
-            Operation::Group(_group) => todo!(),
+            Operation::Group(group) => self.visit_tree(group),
             Operation::Logical {
                 operator: _,
                 expression: _,
