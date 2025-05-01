@@ -1,4 +1,5 @@
 mod addition;
+mod arithmetic;
 mod boolean;
 mod negation;
 mod nil;
