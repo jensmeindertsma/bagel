@@ -4,6 +4,9 @@ help:
 build: 
   cargo build
 
+check:
+  cargo clippy
+
 clean: 
   cargo clean
 
@@ -16,11 +19,11 @@ test:
 test-cc: 
   codecrafters test
 
+# Push to both remotes
 push:
-  # Push to both remotes
   git push
   just push-cc
 
-push-cc:
 # They still use `master` for some unknown reason
+push-cc:
   git push codecrafters main:master
