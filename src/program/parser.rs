@@ -1,6 +1,6 @@
 mod tree;
 
-use crate::scan::Token;
+use super::Token;
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable};
 use tree::{

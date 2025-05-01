@@ -1,11 +1,10 @@
 mod command;
+mod parser;
+mod scanner;
 
-use crate::{
-    parse::ParserError,
-    scan::{Scanner, ScannerError, Token},
-    Parser,
-};
 use command::{Command, CommandError};
+use parser::{Parser, ParserError};
+use scanner::{Scanner, ScannerError, Token};
 use std::{fs, io};
 
 pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {

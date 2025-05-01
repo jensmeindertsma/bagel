@@ -1,9 +1,6 @@
-mod parse;
 mod program;
-mod scan;
 
 use owo_colors::OwoColorize;
-use parse::Parser;
 use program::{run, Failure, ProgramError};
 use std::{
     env,
