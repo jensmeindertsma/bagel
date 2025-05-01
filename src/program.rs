@@ -31,7 +31,7 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
 
             for output in scanner {
                 match output {
-                    Ok(token) => println!("{token}"),
+                    Ok(token) => println!("{}", token.kind),
                     Err(error) => errors.push(error),
                 }
             }

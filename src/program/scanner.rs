@@ -1,4 +1,4 @@
-use super::token::Token;
+use super::token::{Token, TokenKind};
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable, str::Chars};
 
@@ -28,7 +28,7 @@ impl Iterator for Scanner<'_> {
                     None
                 } else {
                     self.done = true;
-                    Some(Ok(Token::Eof))
+                    Some(Ok(Token::new(TokenKind::Eof, self.line)))
                 }
             }
             Some(character) => {
@@ -41,39 +41,39 @@ impl Iterator for Scanner<'_> {
                 }
 
                 let started = match character {
-                    ',' => return Some(Ok(Token::Comma)),
-                    '.' => return Some(Ok(Token::Dot)),
-                    '{' => return Some(Ok(Token::LeftBrace)),
-                    '(' => return Some(Ok(Token::LeftParenthesis)),
-                    '-' => return Some(Ok(Token::Minus)),
-                    '+' => return Some(Ok(Token::Plus)),
-                    '}' => return Some(Ok(Token::RightBrace)),
-                    ')' => return Some(Ok(Token::RightParenthesis)),
-                    ';' => return Some(Ok(Token::Semicolon)),
-                    '*' => return Some(Ok(Token::Star)),
+                    ',' => return Some(Ok(Token::new(TokenKind::Comma, self.line))),
+                    '.' => return Some(Ok(Token::new(TokenKind::Dot, self.line))),
+                    '{' => return Some(Ok(Token::new(TokenKind::LeftBrace, self.line))),
+                    '(' => return Some(Ok(Token::new(TokenKind::LeftParenthesis, self.line))),
+                    '-' => return Some(Ok(Token::new(TokenKind::Minus, self.line))),
+                    '+' => return Some(Ok(Token::new(TokenKind::Plus, self.line))),
+                    '}' => return Some(Ok(Token::new(TokenKind::RightBrace, self.line))),
+                    ')' => return Some(Ok(Token::new(TokenKind::RightParenthesis, self.line))),
+                    ';' => return Some(Ok(Token::new(TokenKind::Semicolon, self.line))),
+                    '*' => return Some(Ok(Token::new(TokenKind::Star, self.line))),
 
                     '!' => Started::IfNextEqual {
-                        then: Token::BangEqual,
-                        otherwise: Token::Bang,
+                        then: Token::new(TokenKind::BangEqual, self.line),
+                        otherwise: Token::new(TokenKind::Bang, self.line),
                     },
 
                     '=' => Started::IfNextEqual {
-                        then: Token::EqualEqual,
-                        otherwise: Token::Equal,
+                        then: Token::new(TokenKind::EqualEqual, self.line),
+                        otherwise: Token::new(TokenKind::Equal, self.line),
                     },
 
                     '<' => Started::IfNextEqual {
-                        then: Token::LessEqual,
-                        otherwise: Token::Less,
+                        then: Token::new(TokenKind::LessEqual, self.line),
+                        otherwise: Token::new(TokenKind::Less, self.line),
                     },
 
                     '>' => Started::IfNextEqual {
-                        then: Token::GreaterEqual,
-                        otherwise: Token::Greater,
+                        then: Token::new(TokenKind::GreaterEqual, self.line),
+                        otherwise: Token::new(TokenKind::Greater, self.line),
                     },
 
                     '/' => Started::MaybeComment {
-                        otherwise: Token::Slash,
+                        otherwise: Token::new(TokenKind::Slash, self.line),
                     },
 
                     '"' => Started::String,
@@ -122,23 +122,23 @@ impl Iterator for Scanner<'_> {
                         // Check whether identifier is actually
                         // reserved keyword
                         match lexeme.as_str() {
-                            "and" => Token::And,
-                            "class" => Token::Class,
-                            "else" => Token::Else,
-                            "false" => Token::False,
-                            "for" => Token::For,
-                            "fun" => Token::Fun,
-                            "if" => Token::If,
-                            "nil" => Token::Nil,
-                            "or" => Token::Or,
-                            "print" => Token::Print,
-                            "return" => Token::Return,
-                            "super" => Token::Super,
-                            "this" => Token::This,
-                            "true" => Token::True,
-                            "var" => Token::Var,
-                            "while" => Token::While,
-                            _ => Token::Identifier { lexeme },
+                            "and" => Token::new(TokenKind::And, self.line),
+                            "class" => Token::new(TokenKind::Class, self.line),
+                            "else" => Token::new(TokenKind::Else, self.line),
+                            "false" => Token::new(TokenKind::False, self.line),
+                            "for" => Token::new(TokenKind::For, self.line),
+                            "fun" => Token::new(TokenKind::Fun, self.line),
+                            "if" => Token::new(TokenKind::If, self.line),
+                            "nil" => Token::new(TokenKind::Nil, self.line),
+                            "or" => Token::new(TokenKind::Or, self.line),
+                            "print" => Token::new(TokenKind::Print, self.line),
+                            "return" => Token::new(TokenKind::Return, self.line),
+                            "super" => Token::new(TokenKind::Super, self.line),
+                            "this" => Token::new(TokenKind::This, self.line),
+                            "true" => Token::new(TokenKind::True, self.line),
+                            "var" => Token::new(TokenKind::Var, self.line),
+                            "while" => Token::new(TokenKind::While, self.line),
+                            _ => Token::new(TokenKind::Identifier { lexeme }, self.line),
                         }
                     }
                     Started::IfNextEqual { then, otherwise } => {
@@ -177,7 +177,7 @@ impl Iterator for Scanner<'_> {
                                 Some(char) => {
                                     if *char == '"' {
                                         self.characters.next();
-                                        break Token::String { value };
+                                        break Token::new(TokenKind::String { value }, self.line);
                                     } else {
                                         value.push(*char);
                                         self.characters.next();
@@ -208,7 +208,7 @@ impl Iterator for Scanner<'_> {
                         }
 
                         let value = literal.parse().unwrap();
-                        Token::Number { literal, value }
+                        Token::new(TokenKind::Number { literal, value }, self.line)
                     }
                 };
 

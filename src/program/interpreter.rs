@@ -3,7 +3,7 @@ use super::tree::{
     operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
     primitive::Primitive,
     visitor::Visitor,
-    Tree,
+    Kind, Tree,
 };
 use std::{
     error::Error,
@@ -24,9 +24,9 @@ impl Interpreter {
     }
 
     fn visit_tree(&self, tree: &Tree) -> Result<Value, InterpreterError> {
-        match tree {
-            Tree::Operation(operation) => self.visit_operation(operation),
-            Tree::Primitive(primitive) => self.visit_primitive(primitive),
+        match &tree.kind {
+            Kind::Operation(operation) => self.visit_operation(operation),
+            Kind::Primitive(primitive) => self.visit_primitive(primitive),
         }
     }
 }
@@ -57,7 +57,19 @@ impl fmt::Display for Value {
 }
 
 #[derive(Debug)]
-pub enum InterpreterError {
+pub struct InterpreterError {
+    kind: ErrorKind,
+    line: usize,
+}
+
+impl InterpreterError {
+    pub fn new(kind: ErrorKind, line: usize) -> Self {
+        Self { kind, line }
+    }
+}
+
+#[derive(Debug)]
+pub enum ErrorKind {
     Addition(Value, Value),
     Comparison {
         operator: ComparisonOperator,
@@ -72,11 +84,11 @@ pub enum InterpreterError {
 
 impl fmt::Display for InterpreterError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Addition(a, b) => {
+        match &self.kind {
+            ErrorKind::Addition(a, b) => {
                 write!(f, "invalid addition `{a}` + `{b}`")
             }
-            Self::Comparison { operator, a, b } => match operator {
+            ErrorKind::Comparison { operator, a, b } => match operator {
                 ComparisonOperator::Equal => write!(f, "invalid comparison `{a}` == `{b}`"),
                 ComparisonOperator::GreaterEqual => write!(f, "invalid comparison `{a}` >= `{b}`"),
                 ComparisonOperator::GreaterThan => write!(f, "invalid comparison `{a}` > `{b}`"),
@@ -84,17 +96,17 @@ impl fmt::Display for InterpreterError {
                 ComparisonOperator::LessThan => write!(f, "invalid comparison `{a}` < `{b}`"),
                 ComparisonOperator::NotEqual => write!(f, "invalid comparison `{a}` != `{b}`"),
             },
-            Self::Division(a, b) => {
+            ErrorKind::Division(a, b) => {
                 write!(f, "invalid division `{a}` / `{b}`")
             }
-            Self::Multiplication(a, b) => {
+            ErrorKind::Multiplication(a, b) => {
                 write!(f, "invalid multiplication `{a}` * `{b}`")
             }
-            Self::Subtraction(a, b) => {
+            ErrorKind::Subtraction(a, b) => {
                 write!(f, "invalid subtraction `{a}` - `{b}`")
             }
-            Self::Negation(value) => {
-                write!(f, "invalid negation of `{value}`")
+            ErrorKind::Negation(_value) => {
+                write!(f, "Operand must be a number.\n[line {}]", self.line)
             }
         }
     }
@@ -109,6 +121,8 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
     ) -> Result<Value, InterpreterError> {
         match operation {
             Operation::Arithmetic { operator, a, b } => {
+                let line = a.line;
+
                 let a = self.visit_tree(a)?;
                 let b = self.visit_tree(b)?;
 
@@ -137,15 +151,25 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                     }
 
                     _ => match operator {
-                        ArithmeticOperator::Add => Err(InterpreterError::Addition(a, b)),
-                        ArithmeticOperator::Divide => Err(InterpreterError::Division(a, b)),
-                        ArithmeticOperator::Multiply => Err(InterpreterError::Multiplication(a, b)),
-                        ArithmeticOperator::Subtract => Err(InterpreterError::Subtraction(a, b)),
+                        ArithmeticOperator::Add => {
+                            Err(InterpreterError::new(ErrorKind::Addition(a, b), line))
+                        }
+                        ArithmeticOperator::Divide => {
+                            Err(InterpreterError::new(ErrorKind::Division(a, b), line))
+                        }
+                        ArithmeticOperator::Multiply => {
+                            Err(InterpreterError::new(ErrorKind::Multiplication(a, b), line))
+                        }
+                        ArithmeticOperator::Subtract => {
+                            Err(InterpreterError::new(ErrorKind::Subtraction(a, b), line))
+                        }
                     },
                 }
             }
 
             Operation::Comparison { operator, a, b } => {
+                let line = a.line;
+
                 let a = self.visit_tree(a)?;
                 let b = self.visit_tree(b)?;
 
@@ -164,11 +188,14 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                         Ok(Value::Boolean(a < b))
                     }
                     (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
-                    (operator, a, b) => Err(InterpreterError::Comparison {
-                        operator: *operator,
-                        a,
-                        b,
-                    }),
+                    (operator, a, b) => Err(InterpreterError::new(
+                        ErrorKind::Comparison {
+                            operator: *operator,
+                            a,
+                            b,
+                        },
+                        line,
+                    )),
                 }
             }
 
@@ -178,11 +205,15 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
                 operator,
                 expression,
             } => {
+                let line = expression.line;
+
                 let value = self.visit_tree(expression)?;
 
                 match (operator, &value) {
                     (LogicalOperator::Negate, Value::Number(number)) => Ok(Value::Number(-number)),
-                    (LogicalOperator::Negate, _) => Err(InterpreterError::Negation(value)),
+                    (LogicalOperator::Negate, _) => {
+                        Err(InterpreterError::new(ErrorKind::Negation(value), line))
+                    }
                     (LogicalOperator::Not, value) => Ok(Value::Boolean(match value {
                         Value::Boolean(value) => !value,
                         Value::Nil => true,

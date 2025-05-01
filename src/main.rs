@@ -34,7 +34,7 @@ pub fn main() -> impl Termination {
             ProgramError::Interpreter(error) => {
                 eprintln!("{error}");
 
-                return ExitCode::from(65);
+                return ExitCode::from(70);
             }
         },
     };

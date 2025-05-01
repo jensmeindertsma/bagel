@@ -1,7 +1,19 @@
 use core::fmt::{self, Formatter};
 
+#[derive(Debug)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub line: usize,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, line: usize) -> Self {
+        Self { kind, line }
+    }
+}
+
 #[derive(Debug, PartialEq)]
-pub enum Token {
+pub enum TokenKind {
     And,
     Bang,
     BangEqual,
@@ -43,7 +55,7 @@ pub enum Token {
     While,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::And => write!(f, "AND and null"),

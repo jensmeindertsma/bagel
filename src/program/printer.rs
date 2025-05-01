@@ -3,7 +3,7 @@ use super::tree::{
     operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
     primitive::Primitive,
     visitor::Visitor,
-    Tree,
+    Kind, Tree,
 };
 
 pub struct Printer<'a> {
@@ -20,9 +20,9 @@ impl<'a> Printer<'a> {
     }
 
     fn visit_tree(&self, tree: &Tree) -> String {
-        match tree {
-            Tree::Operation(operation) => self.visit_operation(operation),
-            Tree::Primitive(primitive) => self.visit_primitive(primitive),
+        match &tree.kind {
+            Kind::Operation(operation) => self.visit_operation(operation),
+            Kind::Primitive(primitive) => self.visit_primitive(primitive),
         }
     }
 }
