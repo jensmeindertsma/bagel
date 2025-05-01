@@ -31,89 +31,6 @@ impl Interpreter {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Value {
-    Boolean(bool),
-    Nil,
-    Number(f64),
-    String(String),
-}
-
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Boolean(value) => write!(f, "{value}"),
-            Self::Nil => write!(f, "nil"),
-            Self::Number(value) => {
-                if value.fract() == 0.0 {
-                    write!(f, "{}", value.trunc())
-                } else {
-                    write!(f, "{value}")
-                }
-            }
-            Self::String(value) => write!(f, "{value}"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct InterpreterError {
-    kind: ErrorKind,
-    line: usize,
-}
-
-impl InterpreterError {
-    fn new(kind: ErrorKind, line: usize) -> Self {
-        Self { kind, line }
-    }
-}
-
-#[derive(Debug)]
-pub enum ErrorKind {
-    Addition(Value, Value),
-    Comparison {
-        operator: ComparisonOperator,
-        a: Value,
-        b: Value,
-    },
-    Division(Value, Value),
-    Multiplication(Value, Value),
-    Subtraction(Value, Value),
-    Negation(Value),
-}
-
-impl fmt::Display for InterpreterError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            ErrorKind::Addition(a, b) => {
-                write!(f, "invalid addition `{a}` + `{b}`")
-            }
-            ErrorKind::Comparison { operator, a, b } => match operator {
-                ComparisonOperator::Equal => write!(f, "invalid comparison `{a}` == `{b}`"),
-                ComparisonOperator::GreaterEqual => write!(f, "invalid comparison `{a}` >= `{b}`"),
-                ComparisonOperator::GreaterThan => write!(f, "invalid comparison `{a}` > `{b}`"),
-                ComparisonOperator::LessEqual => write!(f, "invalid comparison `{a}` <= `{b}`"),
-                ComparisonOperator::LessThan => write!(f, "invalid comparison `{a}` < `{b}`"),
-                ComparisonOperator::NotEqual => write!(f, "invalid comparison `{a}` != `{b}`"),
-            },
-            ErrorKind::Division(a, b) => {
-                write!(f, "invalid division `{a}` / `{b}`")
-            }
-            ErrorKind::Multiplication(a, b) => {
-                write!(f, "invalid multiplication `{a}` * `{b}`")
-            }
-            ErrorKind::Subtraction(a, b) => {
-                write!(f, "invalid subtraction `{a}` - `{b}`")
-            }
-            ErrorKind::Negation(_value) => {
-                write!(f, "Operand must be a number.\n[line {}]", self.line)
-            }
-        }
-    }
-}
-
-impl Error for InterpreterError {}
-
 impl Visitor<Result<Value, InterpreterError>> for Interpreter {
     fn visit_operation(
         &self,
@@ -237,3 +154,88 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
         })
     }
 }
+
+#[derive(Debug, PartialEq)]
+pub enum Value {
+    Boolean(bool),
+    Nil,
+    Number(f64),
+    String(String),
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Boolean(value) => write!(f, "{value}"),
+            Self::Nil => write!(f, "nil"),
+            Self::Number(value) => {
+                if value.fract() == 0.0 {
+                    write!(f, "{}", value.trunc())
+                } else {
+                    write!(f, "{value}")
+                }
+            }
+            Self::String(value) => write!(f, "{value}"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct InterpreterError {
+    kind: ErrorKind,
+    line: usize,
+}
+
+impl InterpreterError {
+    fn new(kind: ErrorKind, line: usize) -> Self {
+        Self { kind, line }
+    }
+}
+
+#[derive(Debug)]
+pub enum ErrorKind {
+    Addition(Value, Value),
+    Comparison {
+        operator: ComparisonOperator,
+        a: Value,
+        b: Value,
+    },
+    Division(Value, Value),
+    Multiplication(Value, Value),
+    Subtraction(Value, Value),
+    Negation(Value),
+}
+
+// Obviously these error messages are not ideal as they do not show
+// the operands but this format is demanded by CodeCrafters.
+impl fmt::Display for InterpreterError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.kind {
+            ErrorKind::Addition(_a, _b) => {
+                write!(f, "Operand must be numbers.\n[line {}]", self.line)
+            }
+            ErrorKind::Comparison { operator, a, b } => match operator {
+                ComparisonOperator::Equal => write!(f, "invalid comparison `{a}` == `{b}`"),
+                ComparisonOperator::GreaterEqual => write!(f, "invalid comparison `{a}` >= `{b}`"),
+                ComparisonOperator::GreaterThan => write!(f, "invalid comparison `{a}` > `{b}`"),
+                ComparisonOperator::LessEqual => write!(f, "invalid comparison `{a}` <= `{b}`"),
+                ComparisonOperator::LessThan => write!(f, "invalid comparison `{a}` < `{b}`"),
+                ComparisonOperator::NotEqual => write!(f, "invalid comparison `{a}` != `{b}`"),
+            },
+            ErrorKind::Division(_a, _b) => {
+                write!(f, "Operands must be numbers.\n[line {}]", self.line)
+            }
+            ErrorKind::Multiplication(_a, _b) => {
+                write!(f, "Operands must be numbers.\n[line {}]", self.line)
+            }
+            ErrorKind::Subtraction(_a, _b) => {
+                write!(f, "Operands must be numbers.\n[line {}]", self.line)
+            }
+            ErrorKind::Negation(_value) => {
+                write!(f, "Operand must be a number.\n[line {}]", self.line)
+            }
+        }
+    }
+}
+
+impl Error for InterpreterError {}

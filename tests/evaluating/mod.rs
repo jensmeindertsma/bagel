@@ -1,5 +1,6 @@
 mod addition;
 mod arithmetic;
+mod binary_error;
 mod boolean;
 mod concatenation;
 mod negation;
