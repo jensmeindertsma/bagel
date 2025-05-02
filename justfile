@@ -14,7 +14,7 @@ run *ARGS:
   cargo run {{ARGS}}
 
 test: 
-  cargo nextest run
+  cargo nextest run --release
 
 test-cc: 
   codecrafters test
