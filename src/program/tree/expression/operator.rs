@@ -5,38 +5,6 @@ pub enum Operator {
     Logical(LogicalOperator),
 }
 
-pub trait Strength {
-    fn binding_power(&self) -> (Option<u8>, Option<u8>);
-}
-
-impl Strength for Operator {
-    fn binding_power(&self) -> (Option<u8>, Option<u8>) {
-        match self {
-            Self::Arithmetic(operator) => operator.binding_power(),
-            Self::Comparison(operator) => operator.binding_power(),
-            Self::Logical(operator) => operator.binding_power(),
-        }
-    }
-}
-
-impl From<ComparisonOperator> for Operator {
-    fn from(operator: ComparisonOperator) -> Self {
-        Self::Comparison(operator)
-    }
-}
-
-impl From<ArithmeticOperator> for Operator {
-    fn from(operator: ArithmeticOperator) -> Self {
-        Self::Arithmetic(operator)
-    }
-}
-
-impl From<LogicalOperator> for Operator {
-    fn from(operator: LogicalOperator) -> Self {
-        Self::Logical(operator)
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum ArithmeticOperator {
     Add,
@@ -59,6 +27,38 @@ pub enum ComparisonOperator {
 pub enum LogicalOperator {
     Negate,
     Not,
+}
+
+impl From<ArithmeticOperator> for Operator {
+    fn from(operator: ArithmeticOperator) -> Self {
+        Self::Arithmetic(operator)
+    }
+}
+
+impl From<ComparisonOperator> for Operator {
+    fn from(operator: ComparisonOperator) -> Self {
+        Self::Comparison(operator)
+    }
+}
+
+impl From<LogicalOperator> for Operator {
+    fn from(operator: LogicalOperator) -> Self {
+        Self::Logical(operator)
+    }
+}
+
+pub trait Strength {
+    fn binding_power(&self) -> (Option<u8>, Option<u8>);
+}
+
+impl Strength for Operator {
+    fn binding_power(&self) -> (Option<u8>, Option<u8>) {
+        match self {
+            Self::Arithmetic(operator) => operator.binding_power(),
+            Self::Comparison(operator) => operator.binding_power(),
+            Self::Logical(operator) => operator.binding_power(),
+        }
+    }
 }
 
 impl Strength for ArithmeticOperator {

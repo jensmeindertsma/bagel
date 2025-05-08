@@ -74,6 +74,24 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
 
             println!("{value}");
         }
+
+        Command::Run { filename } => {
+            let input = fs::read_to_string(filename).map_err(Failure::Io)?;
+
+            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
+
+            let mut parser = Parser::new(tokens);
+
+            let tree = parser
+                .parse()
+                .map_err(|e| Failure::Program(ProgramError::Parser(e)))?;
+
+            let mut interpreter = Interpreter::new(tree);
+
+            interpreter
+                .run()
+                .map_err(|e| Failure::Program(ProgramError::Interpreter(e)))?;
+        }
     }
 
     Ok(())

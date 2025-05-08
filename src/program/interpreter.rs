@@ -1,9 +1,11 @@
 use super::tree::{
-    operation::Operation,
-    operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
-    primitive::Primitive,
+    expression::{
+        operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
+        Expression, ExpressionKind, Operation, Primitive,
+    },
+    statement::Statement,
     visitor::Visitor,
-    Kind, Tree,
+    Tree, TreeKind,
 };
 use std::{
     error::Error,
@@ -23,136 +25,138 @@ impl Interpreter {
         self.visit_tree(&self.tree)
     }
 
+    pub fn run(&mut self) -> Result<(), InterpreterError> {}
+
     fn visit_tree(&self, tree: &Tree) -> Result<Value, InterpreterError> {
         match &tree.kind {
-            Kind::Operation(operation) => self.visit_operation(operation),
-            Kind::Primitive(primitive) => self.visit_primitive(primitive),
+            TreeKind::Expression(operation) => self.visit_expression(operation),
+            TreeKind::Statement(primitive) => self.visit_statement(primitive),
         }
     }
 }
 
 impl Visitor<Result<Value, InterpreterError>> for Interpreter {
-    fn visit_operation(
-        &self,
-        operation: &super::tree::operation::Operation,
-    ) -> Result<Value, InterpreterError> {
-        match operation {
-            Operation::Arithmetic { operator, a, b } => {
-                let line = a.line;
+    fn visit_expression(&self, expression: &Expression) -> Result<Value, InterpreterError> {
+        match &expression.kind {
+            ExpressionKind::Operation(operation) => match operation {
+                Operation::Arithmetic { operator, a, b } => {
+                    let line = a.line;
 
-                let a = self.visit_tree(a)?;
-                let b = self.visit_tree(b)?;
+                    let a = self.visit_expression(a)?;
+                    let b = self.visit_expression(b)?;
 
-                match (operator, &a, &b) {
-                    // String concatenation overloads the `+` operator so it
-                    // must come before the numeric addition operator using the
-                    // same keyword.
-                    (ArithmeticOperator::Add, Value::String(a), Value::String(b)) => {
-                        let mut new = a.clone();
-                        new.push_str(b);
-                        Ok(Value::String(new))
-                    }
-
-                    (ArithmeticOperator::Add, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a + b))
-                    }
-
-                    (ArithmeticOperator::Divide, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a / b))
-                    }
-                    (ArithmeticOperator::Multiply, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a * b))
-                    }
-                    (ArithmeticOperator::Subtract, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Number(a - b))
-                    }
-
-                    _ => match operator {
-                        ArithmeticOperator::Add => {
-                            Err(InterpreterError::new(ErrorKind::Addition(a, b), line))
+                    match (operator, &a, &b) {
+                        // String concatenation overloads the `+` operator so it
+                        // must come before the numeric addition operator using the
+                        // same keyword.
+                        (ArithmeticOperator::Add, Value::String(a), Value::String(b)) => {
+                            let mut new = a.clone();
+                            new.push_str(b);
+                            Ok(Value::String(new))
                         }
-                        ArithmeticOperator::Divide => {
-                            Err(InterpreterError::new(ErrorKind::Division(a, b), line))
+
+                        (ArithmeticOperator::Add, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Number(a + b))
                         }
-                        ArithmeticOperator::Multiply => {
-                            Err(InterpreterError::new(ErrorKind::Multiplication(a, b), line))
+
+                        (ArithmeticOperator::Divide, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Number(a / b))
                         }
-                        ArithmeticOperator::Subtract => {
-                            Err(InterpreterError::new(ErrorKind::Subtraction(a, b), line))
+                        (ArithmeticOperator::Multiply, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Number(a * b))
                         }
-                    },
+                        (ArithmeticOperator::Subtract, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Number(a - b))
+                        }
+
+                        _ => match operator {
+                            ArithmeticOperator::Add => {
+                                Err(InterpreterError::new(ErrorKind::Addition(a, b), line))
+                            }
+                            ArithmeticOperator::Divide => {
+                                Err(InterpreterError::new(ErrorKind::Division(a, b), line))
+                            }
+                            ArithmeticOperator::Multiply => {
+                                Err(InterpreterError::new(ErrorKind::Multiplication(a, b), line))
+                            }
+                            ArithmeticOperator::Subtract => {
+                                Err(InterpreterError::new(ErrorKind::Subtraction(a, b), line))
+                            }
+                        },
+                    }
                 }
-            }
 
-            Operation::Comparison { operator, a, b } => {
-                let line = a.line;
+                Operation::Comparison { operator, a, b } => {
+                    let line = a.line;
 
-                let a = self.visit_tree(a)?;
-                let b = self.visit_tree(b)?;
+                    let a = self.visit_expression(a)?;
+                    let b = self.visit_expression(b)?;
 
-                match (operator, a, b) {
-                    (ComparisonOperator::Equal, a, b) => Ok(Value::Boolean(a == b)),
-                    (ComparisonOperator::GreaterEqual, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a >= b))
+                    match (operator, a, b) {
+                        (ComparisonOperator::Equal, a, b) => Ok(Value::Boolean(a == b)),
+                        (ComparisonOperator::GreaterEqual, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Boolean(a >= b))
+                        }
+                        (ComparisonOperator::GreaterThan, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Boolean(a > b))
+                        }
+                        (ComparisonOperator::LessEqual, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Boolean(a <= b))
+                        }
+                        (ComparisonOperator::LessThan, Value::Number(a), Value::Number(b)) => {
+                            Ok(Value::Boolean(a < b))
+                        }
+                        (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
+                        (_operator, _a, _b) => Err(InterpreterError::new(
+                            // ErrorKind::Comparison {
+                            //     operator: *operator,
+                            //     a,
+                            //     b,
+                            // },
+                            ErrorKind::Comparison,
+                            line,
+                        )),
                     }
-                    (ComparisonOperator::GreaterThan, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a > b))
-                    }
-                    (ComparisonOperator::LessEqual, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a <= b))
-                    }
-                    (ComparisonOperator::LessThan, Value::Number(a), Value::Number(b)) => {
-                        Ok(Value::Boolean(a < b))
-                    }
-                    (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
-                    (_operator, _a, _b) => Err(InterpreterError::new(
-                        // ErrorKind::Comparison {
-                        //     operator: *operator,
-                        //     a,
-                        //     b,
-                        // },
-                        ErrorKind::Comparison,
-                        line,
-                    )),
                 }
-            }
 
-            Operation::Group(group) => self.visit_tree(group),
+                Operation::Group(group) => self.visit_expression(group),
 
-            Operation::Logical {
-                operator,
-                expression,
-            } => {
-                let line = expression.line;
+                Operation::Logical {
+                    operator,
+                    expression,
+                } => {
+                    let line = expression.line;
 
-                let value = self.visit_tree(expression)?;
+                    let value = self.visit_expression(expression)?;
 
-                match (operator, &value) {
-                    (LogicalOperator::Negate, Value::Number(number)) => Ok(Value::Number(-number)),
-                    (LogicalOperator::Negate, _) => {
-                        Err(InterpreterError::new(ErrorKind::Negation(value), line))
+                    match (operator, &value) {
+                        (LogicalOperator::Negate, Value::Number(number)) => {
+                            Ok(Value::Number(-number))
+                        }
+                        (LogicalOperator::Negate, _) => {
+                            Err(InterpreterError::new(ErrorKind::Negation(value), line))
+                        }
+                        (LogicalOperator::Not, value) => Ok(Value::Boolean(match value {
+                            Value::Boolean(value) => !value,
+                            Value::Nil => true,
+                            Value::Number(_) => false,
+                            Value::String(_) => false,
+                        })),
                     }
-                    (LogicalOperator::Not, value) => Ok(Value::Boolean(match value {
-                        Value::Boolean(value) => !value,
-                        Value::Nil => true,
-                        Value::Number(_) => false,
-                        Value::String(_) => false,
-                    })),
                 }
-            }
+            },
+
+            ExpressionKind::Primitive(primitive) => Ok(match primitive {
+                Primitive::Boolean(value) => Value::Boolean(*value),
+                Primitive::Nil => Value::Nil,
+                Primitive::Number(value) => Value::Number(*value),
+                Primitive::String(string) => Value::String(string.clone()),
+            }),
         }
     }
 
-    fn visit_primitive(
-        &self,
-        primitive: &super::tree::primitive::Primitive,
-    ) -> Result<Value, InterpreterError> {
-        Ok(match primitive {
-            Primitive::Boolean(value) => Value::Boolean(*value),
-            Primitive::Nil => Value::Nil,
-            Primitive::Number(value) => Value::Number(*value),
-            Primitive::String(string) => Value::String(string.clone()),
-        })
+    fn visit_statement(&self, statement: &Statement) -> Result<Value, InterpreterError> {
+        todo!()
     }
 }
 

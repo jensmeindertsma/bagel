@@ -5,6 +5,7 @@ pub enum Command {
     Evaluate { filename: String },
     Help,
     Parse { filename: String },
+    Run { filename: String },
     Tokenize { filename: String },
 }
 
@@ -33,6 +34,14 @@ impl Command {
                     .ok_or(CommandError::MissingArgument("filename"))?;
 
                 Ok(Self::Parse { filename })
+            }
+
+            "run" => {
+                let filename = arguments
+                    .next()
+                    .ok_or(CommandError::MissingArgument("filename"))?;
+
+                Ok(Self::Run { filename })
             }
 
             "tokenize" => {

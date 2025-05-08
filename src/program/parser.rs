@@ -1,10 +1,14 @@
 use super::{
     token::{Token, TokenKind},
     tree::{
-        operation::Operation,
-        operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator, Operator, Strength},
-        primitive::Primitive,
-        Kind, Tree,
+        expression::{
+            operator::{
+                ArithmeticOperator, ComparisonOperator, LogicalOperator, Operator, Strength,
+            },
+            Expression, Operation, Primitive,
+        },
+        statement::Statement,
+        Tree,
     },
 };
 use core::fmt::{self, Formatter};
@@ -28,33 +32,94 @@ where
     }
 
     pub fn parse(&mut self) -> Result<Tree, ParserError> {
-        self.parse_expression(0)
+        // Not sure line 0 is correct here?
+        Ok(Tree::statement(self.parse_statement()?))
     }
 
-    fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Tree, ParserError> {
+    fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+        todo!()
+    }
+
+    fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Expression, ParserError> {
         let mut left_hand_side = {
             let token = self
                 .tokens
                 .next()
                 .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
 
-            let tree = match token.kind {
-                TokenKind::False => {
-                    Tree::new(Kind::Primitive(Primitive::Boolean(false)), token.line)
+            match token.kind {
+                TokenKind::And => {
+                    todo!()
                 }
+                TokenKind::Bang | TokenKind::Minus => {
+                    // Here we catch a preceding bang or minus before an expression. These are
+                    // logical operators which apply to the whole expression.
+                    let operator = match token.kind {
+                        TokenKind::Bang => LogicalOperator::Not,
+                        TokenKind::Minus => LogicalOperator::Negate,
+                        _ => unreachable!("by above pattern match"),
+                    };
 
-                TokenKind::Nil => Tree::new(Kind::Primitive(Primitive::Nil), token.line),
+                    let (_, Some(minimum_binding_power)) = operator.binding_power() else {
+                        panic!("failed to get operator binding power")
+                    };
 
-                TokenKind::Number { value, .. } => {
-                    Tree::new(Kind::Primitive(Primitive::Number(value)), token.line)
+                    let expression = self.parse_expression(minimum_binding_power)?;
+
+                    Expression::operation(
+                        Operation::Logical {
+                            operator,
+                            expression: Box::new(expression),
+                        },
+                        token.line,
+                    )
                 }
-
-                TokenKind::String { value } => {
-                    Tree::new(Kind::Primitive(Primitive::String(value)), token.line)
+                TokenKind::BangEqual => {
+                    todo!()
                 }
-
-                TokenKind::True => Tree::new(Kind::Primitive(Primitive::Boolean(true)), token.line),
-
+                TokenKind::Class => {
+                    todo!()
+                }
+                TokenKind::Comma => {
+                    todo!()
+                }
+                TokenKind::Dot => {
+                    todo!()
+                }
+                TokenKind::Else => {
+                    todo!()
+                }
+                TokenKind::Eof => {
+                    todo!()
+                }
+                TokenKind::Equal => {
+                    todo!()
+                }
+                TokenKind::EqualEqual => {
+                    todo!()
+                }
+                TokenKind::False => Expression::primitive(Primitive::Boolean(false), token.line),
+                TokenKind::For => {
+                    todo!()
+                }
+                TokenKind::Fun => {
+                    todo!()
+                }
+                TokenKind::Greater => {
+                    todo!()
+                }
+                TokenKind::GreaterEqual => {
+                    todo!()
+                }
+                TokenKind::Identifier { lexeme } => {
+                    todo!()
+                }
+                TokenKind::If => {
+                    todo!()
+                }
+                TokenKind::LeftBrace => {
+                    todo!()
+                }
                 TokenKind::LeftParenthesis => {
                     // A left parenthesis marks the beginning of a "group".
 
@@ -82,45 +147,62 @@ where
                         ));
                     }
 
-                    Tree::new(
-                        Kind::Operation(Operation::Group(Box::new(inside))),
-                        token.line,
-                    )
+                    Expression::operation(Operation::Group(Box::new(inside)), token.line)
                 }
-
-                token_kind @ (TokenKind::Bang | TokenKind::Minus) => {
-                    // Here we catch a preceding bang or minus before an expression. These are
-                    // logical operators which apply to the whole expression.
-                    let operator = match token_kind {
-                        TokenKind::Bang => LogicalOperator::Not,
-                        TokenKind::Minus => LogicalOperator::Negate,
-                        _ => unreachable!("by above pattern match"),
-                    };
-
-                    let (_, Some(minimum_binding_power)) = operator.binding_power() else {
-                        panic!("failed to get operator binding power")
-                    };
-
-                    let expression = self.parse_expression(minimum_binding_power)?;
-
-                    Tree::new(
-                        Kind::Operation(Operation::Logical {
-                            operator,
-                            expression: Box::new(expression),
-                        }),
-                        token.line,
-                    )
+                TokenKind::Less => {
+                    todo!()
                 }
-
-                unexpected_token => {
-                    return Err(ParserError::new(
-                        ErrorKind::UnexpectedTokenKind(unexpected_token),
-                        token.line,
-                    ));
+                TokenKind::LessEqual => {
+                    todo!()
                 }
-            };
-
-            tree
+                TokenKind::Nil => Expression::primitive(Primitive::Nil, token.line),
+                TokenKind::Number { value, .. } => {
+                    Expression::primitive(Primitive::Number(value), token.line)
+                }
+                TokenKind::Or => {
+                    todo!()
+                }
+                TokenKind::Plus => {
+                    todo!()
+                }
+                TokenKind::Print => {
+                    todo!()
+                }
+                TokenKind::Return => {
+                    todo!()
+                }
+                TokenKind::RightBrace => {
+                    todo!()
+                }
+                TokenKind::RightParenthesis => {
+                    todo!()
+                }
+                TokenKind::Semicolon => {
+                    todo!()
+                }
+                TokenKind::Slash => {
+                    todo!()
+                }
+                TokenKind::Star => {
+                    todo!()
+                }
+                TokenKind::String { value } => {
+                    Expression::primitive(Primitive::String(value), token.line)
+                }
+                TokenKind::Super => {
+                    todo!()
+                }
+                TokenKind::This => {
+                    todo!()
+                }
+                TokenKind::True => Expression::primitive(Primitive::Boolean(true), token.line),
+                TokenKind::Var => {
+                    todo!()
+                }
+                TokenKind::While => {
+                    todo!()
+                }
+            }
         };
 
         loop {
@@ -168,8 +250,8 @@ where
 
             let right_hand_side = self.parse_expression(right_binding_power)?;
 
-            left_hand_side = Tree::new(
-                Kind::Operation(match operator {
+            left_hand_side = Expression::operation(
+                match operator {
                     Operator::Arithmetic(operator) => Operation::Arithmetic {
                         operator,
                         a: Box::new(left_hand_side),
@@ -183,9 +265,9 @@ where
                     },
 
                     _ => unreachable!("by above match statement"),
-                }),
+                },
                 token.line,
-            );
+            )
         }
 
         Ok(left_hand_side)

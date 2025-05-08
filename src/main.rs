@@ -1,7 +1,7 @@
 mod program;
 
 use owo_colors::OwoColorize;
-use program::{run, Failure, ProgramError};
+use program::{Failure, ProgramError};
 use std::{
     env,
     process::{ExitCode, Termination},
@@ -10,7 +10,7 @@ use std::{
 pub fn main() -> impl Termination {
     let show_colors = !matches!(env::var("NO_COLORS"), Ok(value) if value == "true");
 
-    let failure = match run(env::args().skip(1)) {
+    let failure = match program::run(env::args().skip(1)) {
         Ok(_) => return ExitCode::SUCCESS,
         Err(failure) => failure,
     };

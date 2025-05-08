@@ -1,6 +1,6 @@
-use super::{Operation, Primitive};
+use super::{Expression, Statement};
 
 pub trait Visitor<R> {
-    fn visit_operation(&self, operation: &Operation) -> R;
-    fn visit_primitive(&self, primitive: &Primitive) -> R;
+    fn visit_expression(&self, expression: &Expression) -> R;
+    fn visit_statement(&self, statement: &Statement) -> R;
 }

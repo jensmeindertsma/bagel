@@ -1,9 +1,11 @@
 use super::tree::{
-    operation::Operation,
-    operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
-    primitive::Primitive,
+    expression::{
+        operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
+        Expression, ExpressionKind, Operation, Primitive,
+    },
+    statement::{Statement, StatementKind},
     visitor::Visitor,
-    Kind, Tree,
+    Tree, TreeKind,
 };
 
 pub struct Printer<'a> {
@@ -21,64 +23,88 @@ impl<'a> Printer<'a> {
 
     fn visit_tree(&self, tree: &Tree) -> String {
         match &tree.kind {
-            Kind::Operation(operation) => self.visit_operation(operation),
-            Kind::Primitive(primitive) => self.visit_primitive(primitive),
+            TreeKind::Expression(expression) => self.visit_expression(expression),
+            TreeKind::Statement(statement) => self.visit_statement(statement),
         }
     }
 }
 
 impl<'a> Visitor<String> for Printer<'a> {
-    fn visit_operation(&self, operation: &Operation) -> String {
-        match operation {
-            Operation::Arithmetic { operator, a, b } => {
-                let operator = match operator {
-                    ArithmeticOperator::Add => "+",
-                    ArithmeticOperator::Divide => "/",
-                    ArithmeticOperator::Multiply => "*",
-                    ArithmeticOperator::Subtract => "-",
-                };
+    fn visit_expression(&self, expression: &Expression) -> String {
+        match &expression.kind {
+            ExpressionKind::Operation(operation) => match operation {
+                Operation::Arithmetic { operator, a, b } => {
+                    let operator = match operator {
+                        ArithmeticOperator::Add => "+",
+                        ArithmeticOperator::Divide => "/",
+                        ArithmeticOperator::Multiply => "*",
+                        ArithmeticOperator::Subtract => "-",
+                    };
 
-                format!("({operator} {} {})", self.visit_tree(a), self.visit_tree(b))
-            }
-            Operation::Comparison { operator, a, b } => {
-                let operator = match operator {
-                    ComparisonOperator::Equal => "==",
-                    ComparisonOperator::GreaterEqual => ">=",
-                    ComparisonOperator::GreaterThan => ">",
-                    ComparisonOperator::LessEqual => "<=",
-                    ComparisonOperator::LessThan => "<",
-                    ComparisonOperator::NotEqual => "!=",
-                };
+                    format!(
+                        "({operator} {} {})",
+                        self.visit_expression(a),
+                        self.visit_expression(b)
+                    )
+                }
+                Operation::Comparison { operator, a, b } => {
+                    let operator = match operator {
+                        ComparisonOperator::Equal => "==",
+                        ComparisonOperator::GreaterEqual => ">=",
+                        ComparisonOperator::GreaterThan => ">",
+                        ComparisonOperator::LessEqual => "<=",
+                        ComparisonOperator::LessThan => "<",
+                        ComparisonOperator::NotEqual => "!=",
+                    };
 
-                format!("({operator} {} {})", self.visit_tree(a), self.visit_tree(b))
-            }
-            Operation::Group(expression) => format!("(group {})", self.visit_tree(expression)),
-            Operation::Logical {
-                operator,
-                expression,
-            } => {
-                let operator = match operator {
-                    LogicalOperator::Negate => "-",
-                    LogicalOperator::Not => "!",
-                };
+                    format!(
+                        "({operator} {} {})",
+                        self.visit_expression(a),
+                        self.visit_expression(b)
+                    )
+                }
+                Operation::Group(expression) => {
+                    format!("(group {})", self.visit_expression(expression))
+                }
+                Operation::Logical {
+                    operator,
+                    expression,
+                } => {
+                    let operator = match operator {
+                        LogicalOperator::Negate => "-",
+                        LogicalOperator::Not => "!",
+                    };
 
-                format!("({operator} {})", self.visit_tree(expression))
-            }
+                    format!("({operator} {})", self.visit_expression(expression))
+                }
+            },
+            ExpressionKind::Primitive(primitive) => match primitive {
+                Primitive::Boolean(value) => value.to_string(),
+                Primitive::Nil => "nil".to_owned(),
+                Primitive::Number(value) => {
+                    if value.fract() == 0.0 {
+                        format!("{value:.1}")
+                    } else {
+                        format!("{value}")
+                    }
+                }
+                Primitive::String(string) => string.clone(),
+            },
         }
     }
 
-    fn visit_primitive(&self, primitive: &Primitive) -> String {
-        match primitive {
-            Primitive::Boolean(value) => value.to_string(),
-            Primitive::Nil => "nil".to_owned(),
-            Primitive::Number(value) => {
-                if value.fract() == 0.0 {
-                    format!("{value:.1}")
-                } else {
-                    format!("{value}")
-                }
+    fn visit_statement(&self, statement: &Statement) -> String {
+        match &statement.kind {
+            StatementKind::Block(statements) => {
+                todo!()
             }
-            Primitive::String(string) => string.clone(),
+            StatementKind::Expression(expression) => self.visit_expression(expression),
+            StatementKind::Print(expression) => {
+                format!("(print {})", self.visit_expression(expression))
+            }
+            StatementKind::While { condition, body } => {
+                todo!()
+            }
         }
     }
 }
