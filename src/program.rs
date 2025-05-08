@@ -28,16 +28,28 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
 
             tracing::info!("read input: `{input}`");
 
-            match Scanner::new(&input).scan() {
-                Ok(tokens) => {
-                    for token in tokens {
-                        println!("{}", token.kind)
+            let mut errors = Vec::new();
+
+            let scanner = Scanner::new(&input);
+
+            for output in scanner {
+                match output {
+                    Ok(token) => {
+                        tracing::debug!("producing token `{}`", token.kind);
+
+                        println!("{}", token.kind);
+                    }
+                    Err(error) => {
+                        tracing::error!("producing error: `{}`", error);
+
+                        errors.push(error)
                     }
                 }
-                Err(errors) => {
-                    return Err(Failure::Program(ProgramError::Scanner(errors)));
-                }
-            };
+            }
+
+            if !errors.is_empty() {
+                return Err(Failure::Program(ProgramError::Scanner(errors)));
+            }
         }
 
         Command::Parse { filename } => {
