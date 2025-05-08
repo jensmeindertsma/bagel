@@ -2,7 +2,7 @@ pub mod operator;
 
 use operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Expression {
     pub kind: ExpressionKind,
     pub line: usize,
@@ -24,13 +24,13 @@ impl Expression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum ExpressionKind {
     Operation(Operation),
     Primitive(Primitive),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Operation {
     Arithmetic {
         operator: ArithmeticOperator,
@@ -49,7 +49,7 @@ pub enum Operation {
     },
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Primitive {
     Boolean(bool),
     Nil,

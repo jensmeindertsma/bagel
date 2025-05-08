@@ -66,7 +66,7 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 .parse()
                 .map_err(|e| Failure::Program(ProgramError::Parser(e)))?;
 
-            let mut interpreter = Interpreter::new(tree);
+            let interpreter = Interpreter::new(tree);
 
             let value = interpreter
                 .evaluate()
@@ -86,7 +86,7 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
                 .parse()
                 .map_err(|e| Failure::Program(ProgramError::Parser(e)))?;
 
-            let mut interpreter = Interpreter::new(tree);
+            let interpreter = Interpreter::new(tree);
 
             interpreter
                 .run()

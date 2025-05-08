@@ -95,15 +95,8 @@ impl<'a> Visitor<String> for Printer<'a> {
 
     fn visit_statement(&self, statement: &Statement) -> String {
         match &statement.kind {
-            StatementKind::Block(statements) => {
-                todo!()
-            }
-            StatementKind::Expression(expression) => self.visit_expression(expression),
             StatementKind::Print(expression) => {
                 format!("(print {})", self.visit_expression(expression))
-            }
-            StatementKind::While { condition, body } => {
-                todo!()
             }
         }
     }

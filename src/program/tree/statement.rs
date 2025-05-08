@@ -1,18 +1,18 @@
 use super::expression::Expression;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Statement {
     pub kind: StatementKind,
     pub line: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum StatementKind {
-    Block(Vec<Statement>),
-    Expression(Expression),
+    // Block(Vec<Statement>),
+    // Expression(Expression),
     Print(Expression),
-    While {
-        condition: Expression,
-        body: Box<Statement>,
-    },
+    // While {
+    //     condition: Expression,
+    //     body: Box<Statement>,
+    // },
 }

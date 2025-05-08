@@ -7,7 +7,7 @@ use super::{
             },
             Expression, Operation, Primitive,
         },
-        statement::Statement,
+        statement::{Statement, StatementKind},
         Tree,
     },
 };
@@ -32,12 +32,32 @@ where
     }
 
     pub fn parse(&mut self) -> Result<Tree, ParserError> {
-        // Not sure line 0 is correct here?
-        Ok(Tree::statement(self.parse_statement()?))
+        match self.parse_statement() {
+            Ok(statement) => Ok(Tree::statement(statement)),
+            Err(_) => Ok(Tree::expression(self.parse_expression(0)?)),
+        }
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
+        let token = self
+            .tokens
+            .next()
+            .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
+
+        match token.kind {
+            TokenKind::Print => {
+                let expression = self.parse_expression(0)?;
+
+                Ok(Statement {
+                    kind: StatementKind::Print(expression),
+                    line: token.line,
+                })
+            }
+            other => Err(ParserError::new(
+                ErrorKind::UnexpectedToken(other),
+                token.line,
+            )),
+        }
     }
 
     fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Expression, ParserError> {
@@ -48,9 +68,6 @@ where
                 .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
 
             match token.kind {
-                TokenKind::And => {
-                    todo!()
-                }
                 TokenKind::Bang | TokenKind::Minus => {
                     // Here we catch a preceding bang or minus before an expression. These are
                     // logical operators which apply to the whole expression.
@@ -74,52 +91,9 @@ where
                         token.line,
                     )
                 }
-                TokenKind::BangEqual => {
-                    todo!()
-                }
-                TokenKind::Class => {
-                    todo!()
-                }
-                TokenKind::Comma => {
-                    todo!()
-                }
-                TokenKind::Dot => {
-                    todo!()
-                }
-                TokenKind::Else => {
-                    todo!()
-                }
-                TokenKind::Eof => {
-                    todo!()
-                }
-                TokenKind::Equal => {
-                    todo!()
-                }
-                TokenKind::EqualEqual => {
-                    todo!()
-                }
+
                 TokenKind::False => Expression::primitive(Primitive::Boolean(false), token.line),
-                TokenKind::For => {
-                    todo!()
-                }
-                TokenKind::Fun => {
-                    todo!()
-                }
-                TokenKind::Greater => {
-                    todo!()
-                }
-                TokenKind::GreaterEqual => {
-                    todo!()
-                }
-                TokenKind::Identifier { lexeme } => {
-                    todo!()
-                }
-                TokenKind::If => {
-                    todo!()
-                }
-                TokenKind::LeftBrace => {
-                    todo!()
-                }
+
                 TokenKind::LeftParenthesis => {
                     // A left parenthesis marks the beginning of a "group".
 
@@ -142,65 +116,31 @@ where
 
                     if next.kind != TokenKind::RightParenthesis {
                         return Err(ParserError::new(
-                            ErrorKind::UnexpectedTokenKind(next.kind),
+                            ErrorKind::UnexpectedToken(next.kind),
                             line,
                         ));
                     }
 
                     Expression::operation(Operation::Group(Box::new(inside)), token.line)
                 }
-                TokenKind::Less => {
-                    todo!()
-                }
-                TokenKind::LessEqual => {
-                    todo!()
-                }
+
                 TokenKind::Nil => Expression::primitive(Primitive::Nil, token.line),
+
                 TokenKind::Number { value, .. } => {
                     Expression::primitive(Primitive::Number(value), token.line)
                 }
-                TokenKind::Or => {
-                    todo!()
-                }
-                TokenKind::Plus => {
-                    todo!()
-                }
-                TokenKind::Print => {
-                    todo!()
-                }
-                TokenKind::Return => {
-                    todo!()
-                }
-                TokenKind::RightBrace => {
-                    todo!()
-                }
-                TokenKind::RightParenthesis => {
-                    todo!()
-                }
-                TokenKind::Semicolon => {
-                    todo!()
-                }
-                TokenKind::Slash => {
-                    todo!()
-                }
-                TokenKind::Star => {
-                    todo!()
-                }
+
                 TokenKind::String { value } => {
                     Expression::primitive(Primitive::String(value), token.line)
                 }
-                TokenKind::Super => {
-                    todo!()
-                }
-                TokenKind::This => {
-                    todo!()
-                }
+
                 TokenKind::True => Expression::primitive(Primitive::Boolean(true), token.line),
-                TokenKind::Var => {
-                    todo!()
-                }
-                TokenKind::While => {
-                    todo!()
+
+                _ => {
+                    return Err(ParserError::new(
+                        ErrorKind::UnexpectedToken(token.kind),
+                        token.line,
+                    ))
                 }
             }
         };
@@ -289,14 +229,14 @@ impl ParserError {
 #[derive(Debug)]
 pub enum ErrorKind {
     UnexpectedEof,
-    UnexpectedTokenKind(TokenKind),
+    UnexpectedToken(TokenKind),
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ErrorKind::UnexpectedEof => write!(f, "unexpected EOF\n[line {}]", self.line),
-            ErrorKind::UnexpectedTokenKind(token) => {
+            ErrorKind::UnexpectedToken(token) => {
                 write!(
                     f,
                     "found unexpected token `{token:?}`\n[line {}]",

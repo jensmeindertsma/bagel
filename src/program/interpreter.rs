@@ -3,7 +3,7 @@ use super::tree::{
         operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
         Expression, ExpressionKind, Operation, Primitive,
     },
-    statement::Statement,
+    statement::{Statement, StatementKind},
     visitor::Visitor,
     Tree, TreeKind,
 };
@@ -21,21 +21,34 @@ impl Interpreter {
         Self { tree }
     }
 
-    pub fn evaluate(&mut self) -> Result<Value, InterpreterError> {
-        self.visit_tree(&self.tree)
+    pub fn evaluate(self) -> Result<Value, InterpreterError> {
+        let TreeKind::Expression(expression) = self.tree.kind else {
+            return Err(InterpreterError::new(
+                ErrorKind::ExpectedExpression,
+                self.tree.line,
+            ));
+        };
+
+        Evaluation::visit_expression(&Evaluation, &expression)
     }
 
-    pub fn run(&mut self) -> Result<(), InterpreterError> {}
+    pub fn run(self) -> Result<(), InterpreterError> {
+        let TreeKind::Statement(statement) = self.tree.kind else {
+            return Err(InterpreterError::new(
+                ErrorKind::ExpectedStatement,
+                self.tree.line,
+            ));
+        };
 
-    fn visit_tree(&self, tree: &Tree) -> Result<Value, InterpreterError> {
-        match &tree.kind {
-            TreeKind::Expression(operation) => self.visit_expression(operation),
-            TreeKind::Statement(primitive) => self.visit_statement(primitive),
-        }
+        Execution::visit_statement(&Execution, &statement)
     }
 }
 
-impl Visitor<Result<Value, InterpreterError>> for Interpreter {
+struct Evaluation;
+
+struct Execution;
+
+impl Visitor<Result<Value, InterpreterError>> for Evaluation {
     fn visit_expression(&self, expression: &Expression) -> Result<Value, InterpreterError> {
         match &expression.kind {
             ExpressionKind::Operation(operation) => match operation {
@@ -155,8 +168,26 @@ impl Visitor<Result<Value, InterpreterError>> for Interpreter {
         }
     }
 
-    fn visit_statement(&self, statement: &Statement) -> Result<Value, InterpreterError> {
-        todo!()
+    fn visit_statement(&self, _: &Statement) -> Result<Value, InterpreterError> {
+        Err(InterpreterError::new(ErrorKind::ExpectedExpression, 1))
+    }
+}
+
+impl Visitor<Result<(), InterpreterError>> for Execution {
+    fn visit_expression(&self, _: &Expression) -> Result<(), InterpreterError> {
+        Err(InterpreterError::new(ErrorKind::ExpectedStatement, 1))
+    }
+
+    fn visit_statement(&self, statement: &Statement) -> Result<(), InterpreterError> {
+        match &statement.kind {
+            StatementKind::Print(expression) => {
+                let value = Evaluation::visit_expression(&Evaluation, expression)?;
+
+                println!("{value}");
+
+                Ok(())
+            }
+        }
     }
 }
 
@@ -207,6 +238,8 @@ pub enum ErrorKind {
     // },
     Comparison,
     Division(Value, Value),
+    ExpectedExpression,
+    ExpectedStatement,
     Multiplication(Value, Value),
     Subtraction(Value, Value),
     Negation(Value),
@@ -232,7 +265,10 @@ impl fmt::Display for InterpreterError {
             | ErrorKind::Subtraction(_a, _b) => {
                 write!(f, "Operands must be numbers.\n[line {}]", self.line)
             }
-
+            ErrorKind::ExpectedExpression => {
+                write!(f, "Expected expression\n[line {}]", self.line)
+            }
+            ErrorKind::ExpectedStatement => write!(f, "Expected statement\n[line {}]", self.line),
             ErrorKind::Negation(_value) => {
                 write!(f, "Operand must be a number.\n[line {}]", self.line)
             }
