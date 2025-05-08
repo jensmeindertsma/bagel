@@ -1,5 +1,3 @@
-use tracing::{instrument, span, Level};
-
 use super::tree::{
     expression::{
         operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},

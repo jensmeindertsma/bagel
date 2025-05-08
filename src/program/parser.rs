@@ -1,5 +1,3 @@
-use tracing::instrument;
-
 use super::{
     token::{Token, TokenKind},
     tree::{
