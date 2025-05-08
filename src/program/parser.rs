@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use super::{
     token::{Token, TokenKind},
     tree::{
@@ -38,9 +40,12 @@ where
             .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
 
         match token.kind {
-            TokenKind::Print => Ok(Tree::statement(self.parse_statement()?)),
+            TokenKind::Print => {
+                tracing::debug!("parsing first token `{}` as statement", token.kind);
+                Ok(Tree::statement(self.parse_statement()?))
+            }
             _ => {
-                // Otherwise, parse an expression
+                tracing::debug!("parsing first token `{}` as expression", token.kind);
                 Ok(Tree::expression(self.parse_expression(0)?))
             }
         }
@@ -52,20 +57,26 @@ where
             .next()
             .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
 
-        match token.kind {
+        let statement = match token.kind {
             TokenKind::Print => {
                 let expression = self.parse_expression(0)?;
 
-                Ok(Statement {
+                Statement {
                     kind: StatementKind::Print(expression),
                     line: token.line,
-                })
+                }
             }
-            other => Err(ParserError::new(
-                ErrorKind::UnexpectedToken(other),
-                token.line,
-            )),
-        }
+            other => {
+                return Err(ParserError::new(
+                    ErrorKind::UnexpectedToken(other),
+                    token.line,
+                ))
+            }
+        };
+
+        tracing::debug!("parsed statement\n`{:?}`", statement.kind);
+
+        Ok(statement)
     }
 
     fn parse_expression(&mut self, minimum_binding_power: u8) -> Result<Expression, ParserError> {
@@ -153,6 +164,8 @@ where
             }
         };
 
+        tracing::debug!("left hand side = {:?}", left_hand_side.kind);
+
         loop {
             // We've got ourselves a left-hand-side, now we look at the operator we expect
             // to follow it. We then keep folding into the left-hand-side new expressions
@@ -179,6 +192,8 @@ where
                 _ => todo!("unhandled token {peeked_token:?}"),
             };
 
+            tracing::debug!("parsing operator `{operator:?}`");
+
             let (Some(left_binding_power), Some(right_binding_power)) = operator.binding_power()
             else {
                 panic!("failed to get operator binding power")
@@ -197,6 +212,8 @@ where
                 .expect("next token should exist because we peeked at it");
 
             let right_hand_side = self.parse_expression(right_binding_power)?;
+
+            tracing::info!("right hand side = {:?}", right_hand_side.kind);
 
             left_hand_side = Expression::operation(
                 match operator {
@@ -217,6 +234,8 @@ where
                 token.line,
             )
         }
+
+        tracing::debug!("parsed expression\n`{:?}`", left_hand_side.kind);
 
         Ok(left_hand_side)
     }

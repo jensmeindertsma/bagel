@@ -1,3 +1,5 @@
+use tracing::{instrument, span, Level};
+
 use super::tree::{
     expression::{
         operator::{ArithmeticOperator, ComparisonOperator, LogicalOperator},
@@ -44,13 +46,17 @@ impl Interpreter {
     }
 }
 
+#[derive(Debug)]
 struct Evaluation;
 
+#[derive(Debug)]
 struct Execution;
 
 impl Visitor<Result<Value, InterpreterError>> for Evaluation {
     fn visit_expression(&self, expression: &Expression) -> Result<Value, InterpreterError> {
-        match &expression.kind {
+        tracing::debug!("evaluating expression\n`{:?}`", expression.kind);
+
+        let value = match &expression.kind {
             ExpressionKind::Operation(operation) => match operation {
                 Operation::Arithmetic { operator, a, b } => {
                     let line = a.line;
@@ -65,35 +71,41 @@ impl Visitor<Result<Value, InterpreterError>> for Evaluation {
                         (ArithmeticOperator::Add, Value::String(a), Value::String(b)) => {
                             let mut new = a.clone();
                             new.push_str(b);
-                            Ok(Value::String(new))
+                            Value::String(new)
                         }
 
                         (ArithmeticOperator::Add, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Number(a + b))
+                            Value::Number(a + b)
                         }
 
                         (ArithmeticOperator::Divide, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Number(a / b))
+                            Value::Number(a / b)
                         }
                         (ArithmeticOperator::Multiply, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Number(a * b))
+                            Value::Number(a * b)
                         }
                         (ArithmeticOperator::Subtract, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Number(a - b))
+                            Value::Number(a - b)
                         }
 
                         _ => match operator {
                             ArithmeticOperator::Add => {
-                                Err(InterpreterError::new(ErrorKind::Addition(a, b), line))
+                                return Err(InterpreterError::new(ErrorKind::Addition(a, b), line))
                             }
                             ArithmeticOperator::Divide => {
-                                Err(InterpreterError::new(ErrorKind::Division(a, b), line))
+                                return Err(InterpreterError::new(ErrorKind::Division(a, b), line))
                             }
                             ArithmeticOperator::Multiply => {
-                                Err(InterpreterError::new(ErrorKind::Multiplication(a, b), line))
+                                return Err(InterpreterError::new(
+                                    ErrorKind::Multiplication(a, b),
+                                    line,
+                                ))
                             }
                             ArithmeticOperator::Subtract => {
-                                Err(InterpreterError::new(ErrorKind::Subtraction(a, b), line))
+                                return Err(InterpreterError::new(
+                                    ErrorKind::Subtraction(a, b),
+                                    line,
+                                ))
                             }
                         },
                     }
@@ -106,33 +118,35 @@ impl Visitor<Result<Value, InterpreterError>> for Evaluation {
                     let b = self.visit_expression(b)?;
 
                     match (operator, a, b) {
-                        (ComparisonOperator::Equal, a, b) => Ok(Value::Boolean(a == b)),
+                        (ComparisonOperator::Equal, a, b) => Value::Boolean(a == b),
                         (ComparisonOperator::GreaterEqual, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Boolean(a >= b))
+                            Value::Boolean(a >= b)
                         }
                         (ComparisonOperator::GreaterThan, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Boolean(a > b))
+                            Value::Boolean(a > b)
                         }
                         (ComparisonOperator::LessEqual, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Boolean(a <= b))
+                            Value::Boolean(a <= b)
                         }
                         (ComparisonOperator::LessThan, Value::Number(a), Value::Number(b)) => {
-                            Ok(Value::Boolean(a < b))
+                            Value::Boolean(a < b)
                         }
-                        (ComparisonOperator::NotEqual, a, b) => Ok(Value::Boolean(a != b)),
-                        (_operator, _a, _b) => Err(InterpreterError::new(
-                            // ErrorKind::Comparison {
-                            //     operator: *operator,
-                            //     a,
-                            //     b,
-                            // },
-                            ErrorKind::Comparison,
-                            line,
-                        )),
+                        (ComparisonOperator::NotEqual, a, b) => Value::Boolean(a != b),
+                        (_operator, _a, _b) => {
+                            return Err(InterpreterError::new(
+                                // ErrorKind::Comparison {
+                                //     operator: *operator,
+                                //     a,
+                                //     b,
+                                // },
+                                ErrorKind::Comparison,
+                                line,
+                            ));
+                        }
                     }
                 }
 
-                Operation::Group(group) => self.visit_expression(group),
+                Operation::Group(group) => return self.visit_expression(group),
 
                 Operation::Logical {
                     operator,
@@ -143,29 +157,31 @@ impl Visitor<Result<Value, InterpreterError>> for Evaluation {
                     let value = self.visit_expression(expression)?;
 
                     match (operator, &value) {
-                        (LogicalOperator::Negate, Value::Number(number)) => {
-                            Ok(Value::Number(-number))
-                        }
+                        (LogicalOperator::Negate, Value::Number(number)) => Value::Number(-number),
                         (LogicalOperator::Negate, _) => {
-                            Err(InterpreterError::new(ErrorKind::Negation(value), line))
+                            return Err(InterpreterError::new(ErrorKind::Negation(value), line))
                         }
-                        (LogicalOperator::Not, value) => Ok(Value::Boolean(match value {
+                        (LogicalOperator::Not, value) => Value::Boolean(match value {
                             Value::Boolean(value) => !value,
                             Value::Nil => true,
                             Value::Number(_) => false,
                             Value::String(_) => false,
-                        })),
+                        }),
                     }
                 }
             },
 
-            ExpressionKind::Primitive(primitive) => Ok(match primitive {
+            ExpressionKind::Primitive(primitive) => match primitive {
                 Primitive::Boolean(value) => Value::Boolean(*value),
                 Primitive::Nil => Value::Nil,
                 Primitive::Number(value) => Value::Number(*value),
                 Primitive::String(string) => Value::String(string.clone()),
-            }),
-        }
+            },
+        };
+
+        tracing::debug!("evaluated to value `{value:?}`");
+
+        Ok(value)
     }
 
     fn visit_statement(&self, _: &Statement) -> Result<Value, InterpreterError> {
@@ -179,9 +195,13 @@ impl Visitor<Result<(), InterpreterError>> for Execution {
     }
 
     fn visit_statement(&self, statement: &Statement) -> Result<(), InterpreterError> {
+        tracing::info!("executing {:?}", statement.kind);
+
         match &statement.kind {
             StatementKind::Print(expression) => {
                 let value = Evaluation::visit_expression(&Evaluation, expression)?;
+
+                tracing::info!("printing value `{value}`");
 
                 println!("{value}");
 

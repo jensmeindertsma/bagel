@@ -2,6 +2,7 @@ use super::token::{Token, TokenKind};
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable, str::Chars};
 
+#[derive(Debug)]
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
     done: bool,
@@ -14,6 +15,30 @@ impl<'a> Scanner<'a> {
             characters: input.chars().peekable(),
             done: false,
             line: 1,
+        }
+    }
+
+    pub fn scan(self) -> Result<Vec<Token>, Vec<ScannerError>> {
+        let mut tokens = Vec::new();
+        let mut errors = Vec::new();
+
+        for output in self {
+            match output {
+                Ok(token) => {
+                    tracing::debug!("producing token `{}`", token.kind);
+                    tokens.push(token)
+                }
+                Err(error) => {
+                    tracing::error!("producing error: `{}`", error);
+                    errors.push(error)
+                }
+            }
+        }
+
+        if !errors.is_empty() {
+            Err(errors)
+        } else {
+            Ok(tokens)
         }
     }
 }

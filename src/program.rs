@@ -5,7 +5,6 @@ mod printer;
 mod scanner;
 mod token;
 mod tree;
-mod utilities;
 
 use command::{Command, CommandError};
 use interpreter::{Interpreter, InterpreterError};
@@ -13,8 +12,9 @@ use parser::{Parser, ParserError};
 use printer::Printer;
 use scanner::{Scanner, ScannerError};
 use std::{fs, io};
-use utilities::scan;
+use tracing::instrument;
 
+#[instrument(name = "program", skip_all)]
 pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
     let command = Command::from_arguments(arguments).map_err(Failure::InvalidCommand)?;
 
@@ -26,25 +26,28 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
         Command::Tokenize { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let scanner = Scanner::new(&input);
-            let mut errors = Vec::new();
+            tracing::info!("read input: `{input}`");
 
-            for output in scanner {
-                match output {
-                    Ok(token) => println!("{}", token.kind),
-                    Err(error) => errors.push(error),
+            match Scanner::new(&input).scan() {
+                Ok(tokens) => {
+                    for token in tokens {
+                        println!("{}", token.kind)
+                    }
                 }
-            }
-
-            if !errors.is_empty() {
-                return Err(Failure::Program(ProgramError::Scanner(errors)));
-            }
+                Err(errors) => {
+                    return Err(Failure::Program(ProgramError::Scanner(errors)));
+                }
+            };
         }
 
         Command::Parse { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
+            tracing::info!("read input: `{input}`");
+
+            let tokens = Scanner::new(&input)
+                .scan()
+                .map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
 
             let mut parser = Parser::new(tokens);
 
@@ -58,7 +61,9 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
         Command::Evaluate { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
+            let tokens = Scanner::new(&input)
+                .scan()
+                .map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
 
             let mut parser = Parser::new(tokens);
 
@@ -78,7 +83,9 @@ pub fn run(arguments: impl Iterator<Item = String>) -> Result<(), Failure> {
         Command::Run { filename } => {
             let input = fs::read_to_string(filename).map_err(Failure::Io)?;
 
-            let tokens = scan(&input).map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
+            let tokens = Scanner::new(&input)
+                .scan()
+                .map_err(|e| Failure::Program(ProgramError::Scanner(e)))?;
 
             let mut parser = Parser::new(tokens);
 
