@@ -32,9 +32,17 @@ where
     }
 
     pub fn parse(&mut self) -> Result<Tree, ParserError> {
-        match self.parse_statement() {
-            Ok(statement) => Ok(Tree::statement(statement)),
-            Err(_) => Ok(Tree::expression(self.parse_expression(0)?)),
+        let token = self
+            .tokens
+            .peek()
+            .ok_or(ParserError::new(ErrorKind::UnexpectedEof, 1))?;
+
+        match token.kind {
+            TokenKind::Print => Ok(Tree::statement(self.parse_statement()?)),
+            _ => {
+                // Otherwise, parse an expression
+                Ok(Tree::expression(self.parse_expression(0)?))
+            }
         }
     }
 
@@ -157,7 +165,7 @@ where
             };
 
             let operator: Operator = match peeked_token.kind {
-                TokenKind::Eof | TokenKind::RightParenthesis => break,
+                TokenKind::Eof | TokenKind::RightParenthesis | TokenKind::Semicolon => break,
                 TokenKind::Minus => ArithmeticOperator::Subtract.into(),
                 TokenKind::Plus => ArithmeticOperator::Add.into(),
                 TokenKind::Slash => ArithmeticOperator::Divide.into(),
@@ -168,7 +176,7 @@ where
                 TokenKind::Less => ComparisonOperator::LessThan.into(),
                 TokenKind::LessEqual => ComparisonOperator::LessEqual.into(),
                 TokenKind::BangEqual => ComparisonOperator::NotEqual.into(),
-                _ => todo!("unhandled operator"),
+                _ => todo!("unhandled token {peeked_token:?}"),
             };
 
             let (Some(left_binding_power), Some(right_binding_power)) = operator.binding_power()
