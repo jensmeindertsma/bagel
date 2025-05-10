@@ -5,7 +5,7 @@ use super::tree::{
     },
     statement::{Statement, StatementKind},
     visitor::Visitor,
-    Tree, TreeKind,
+    Tree,
 };
 
 pub struct Printer<'a> {
@@ -22,9 +22,10 @@ impl<'a> Printer<'a> {
     }
 
     fn visit_tree(&self, tree: &Tree) -> String {
-        match &tree.kind {
-            TreeKind::Expression(expression) => self.visit_expression(expression),
-            TreeKind::Statement(statement) => self.visit_statement(statement),
+        match &tree {
+            Tree::Expression(expression) => self.visit_expression(expression),
+            Tree::Program(statements) => self.visit_program(statements),
+            Tree::Statement(statement) => self.visit_statement(statement),
         }
     }
 }
@@ -91,6 +92,14 @@ impl<'a> Visitor<String> for Printer<'a> {
                 Primitive::String(string) => string.clone(),
             },
         }
+    }
+
+    fn visit_program(&self, statements: &[Statement]) -> String {
+        statements
+            .iter()
+            .map(|stmt| self.visit_statement(stmt))
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 
     fn visit_statement(&self, statement: &Statement) -> String {

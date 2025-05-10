@@ -40,11 +40,60 @@ where
         match token.kind {
             TokenKind::Print => {
                 tracing::debug!("parsing first token `{}` as statement", token.kind);
-                Ok(Tree::statement(self.parse_statement()?))
+
+                // this will consume the token we just peeked at
+                let first = self.parse_statement()?;
+
+                // we should check if there is another statement of not
+                match self.parse_statement() {
+                    Err(error) => {
+                        match error.kind {
+                            ErrorKind::UnexpectedEof => {
+                                tracing::debug!("just a single statement");
+                                // file contains just single statement
+                                Ok(Tree::Statement(first))
+                            }
+                            _ => Err(error),
+                        }
+                    }
+                    Ok(second) => {
+                        let mut statements = vec![first, second];
+
+                        loop {
+                            let next = self.parse_statement();
+
+                            match next {
+                                Ok(statement) => {
+                                    tracing::debug!("found new statement {statement:?}");
+                                    statements.push(statement)
+                                }
+                                Err(error) => {
+                                    tracing::debug!("error while parsing program: {error}");
+                                    match error.kind {
+                                        ErrorKind::UnexpectedEof => break,
+                                        ErrorKind::UnexpectedToken {
+                                            found: TokenKind::Eof,
+                                            ..
+                                        } => break,
+
+                                        _ => return Err(error),
+                                    }
+                                }
+                            }
+                        }
+
+                        tracing::debug!(
+                            "parsed whole program with {} statements",
+                            statements.len()
+                        );
+
+                        Ok(Tree::Program(statements))
+                    }
+                }
             }
             _ => {
                 tracing::debug!("parsing first token `{}` as expression", token.kind);
-                Ok(Tree::expression(self.parse_expression(0)?))
+                Ok(Tree::Expression(self.parse_expression(0)?))
             }
         }
     }
@@ -66,11 +115,29 @@ where
             }
             other => {
                 return Err(ParserError::new(
-                    ErrorKind::UnexpectedToken(other),
+                    ErrorKind::UnexpectedToken {
+                        found: other,
+                        expected: None,
+                    },
                     token.line,
                 ))
             }
         };
+
+        let next_token = self
+            .tokens
+            .next()
+            .ok_or(ParserError::new(ErrorKind::UnexpectedEof, statement.line))?;
+
+        if next_token.kind != TokenKind::Semicolon {
+            return Err(ParserError::new(
+                ErrorKind::UnexpectedToken {
+                    found: next_token.kind,
+                    expected: Some(TokenKind::Semicolon),
+                },
+                next_token.line,
+            ));
+        }
 
         tracing::debug!("parsed statement\n`{:?}`", statement.kind);
 
@@ -133,7 +200,10 @@ where
 
                     if next.kind != TokenKind::RightParenthesis {
                         return Err(ParserError::new(
-                            ErrorKind::UnexpectedToken(next.kind),
+                            ErrorKind::UnexpectedToken {
+                                found: next.kind,
+                                expected: Some(TokenKind::RightParenthesis),
+                            },
                             line,
                         ));
                     }
@@ -155,7 +225,10 @@ where
 
                 _ => {
                     return Err(ParserError::new(
-                        ErrorKind::UnexpectedToken(token.kind),
+                        ErrorKind::UnexpectedToken {
+                            found: token.kind,
+                            expected: None,
+                        },
                         token.line,
                     ))
                 }
@@ -251,23 +324,35 @@ impl ParserError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorKind {
     UnexpectedEof,
-    UnexpectedToken(TokenKind),
+    UnexpectedToken {
+        found: TokenKind,
+        expected: Option<TokenKind>,
+    },
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.kind {
             ErrorKind::UnexpectedEof => write!(f, "unexpected EOF\n[line {}]", self.line),
-            ErrorKind::UnexpectedToken(token) => {
-                write!(
-                    f,
-                    "found unexpected token `{token:?}`\n[line {}]",
-                    self.line
-                )
-            }
+            ErrorKind::UnexpectedToken { found, expected } => match expected {
+                Some(expected) => {
+                    write!(
+                        f,
+                        "found unexpected token `{found:?}`, expected {expected:?}\n[line {}]",
+                        self.line
+                    )
+                }
+                None => {
+                    write!(
+                        f,
+                        "found unexpected token `{found:?}`\n[line {}]",
+                        self.line
+                    )
+                }
+            },
         }
     }
 }

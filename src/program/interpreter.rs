@@ -5,7 +5,7 @@ use super::tree::{
     },
     statement::{Statement, StatementKind},
     visitor::Visitor,
-    Tree, TreeKind,
+    Tree,
 };
 use std::{
     error::Error,
@@ -22,23 +22,17 @@ impl Interpreter {
     }
 
     pub fn evaluate(self) -> Result<Value, InterpreterError> {
-        let TreeKind::Expression(expression) = self.tree.kind else {
-            return Err(InterpreterError::new(
-                ErrorKind::ExpectedExpression,
-                self.tree.line,
-            ));
+        let Tree::Expression(expression) = self.tree else {
+            return Err(InterpreterError::new(ErrorKind::ExpectedExpression, 1));
         };
 
         Evaluation::visit_expression(&Evaluation, &expression)
     }
 
     pub fn run(self) -> Result<(), InterpreterError> {
-        let TreeKind::Statement(statement) = self.tree.kind else {
-            return Err(InterpreterError::new(
-                ErrorKind::ExpectedStatement,
-                self.tree.line,
-            ));
-        };
+        match self.tree {
+            Expression(_, _) => return Err(InterpreterError::new(ErrorKind::ExpectedStatement, 1)),
+        }
 
         Execution::visit_statement(&Execution, &statement)
     }
@@ -182,6 +176,10 @@ impl Visitor<Result<Value, InterpreterError>> for Evaluation {
         Ok(value)
     }
 
+    fn visit_program(&self, _: &[Statement]) -> Result<Value, InterpreterError> {
+        Err(InterpreterError::new(ErrorKind::ExpectedExpression, 1))
+    }
+
     fn visit_statement(&self, _: &Statement) -> Result<Value, InterpreterError> {
         Err(InterpreterError::new(ErrorKind::ExpectedExpression, 1))
     }
@@ -190,6 +188,10 @@ impl Visitor<Result<Value, InterpreterError>> for Evaluation {
 impl Visitor<Result<(), InterpreterError>> for Execution {
     fn visit_expression(&self, _: &Expression) -> Result<(), InterpreterError> {
         Err(InterpreterError::new(ErrorKind::ExpectedStatement, 1))
+    }
+
+    fn visit_program(&self, _statements: &[Statement]) -> Result<(), InterpreterError> {
+        todo!()
     }
 
     fn visit_statement(&self, statement: &Statement) -> Result<(), InterpreterError> {
