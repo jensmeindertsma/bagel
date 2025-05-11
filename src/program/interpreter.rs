@@ -31,10 +31,10 @@ impl Interpreter {
 
     pub fn run(self) -> Result<(), InterpreterError> {
         match self.tree {
-            Expression(_, _) => return Err(InterpreterError::new(ErrorKind::ExpectedStatement, 1)),
+            Tree::Expression(expression) => Execution::visit_expression(&Execution, &expression),
+            Tree::Statement(statement) => Execution::visit_statement(&Execution, &statement),
+            Tree::Program(statements) => Execution::visit_program(&Execution, &statements),
         }
-
-        Execution::visit_statement(&Execution, &statement)
     }
 }
 
@@ -190,8 +190,12 @@ impl Visitor<Result<(), InterpreterError>> for Execution {
         Err(InterpreterError::new(ErrorKind::ExpectedStatement, 1))
     }
 
-    fn visit_program(&self, _statements: &[Statement]) -> Result<(), InterpreterError> {
-        todo!()
+    fn visit_program(&self, statements: &[Statement]) -> Result<(), InterpreterError> {
+        for statement in statements {
+            self.visit_statement(statement)?;
+        }
+
+        Ok(())
     }
 
     fn visit_statement(&self, statement: &Statement) -> Result<(), InterpreterError> {
