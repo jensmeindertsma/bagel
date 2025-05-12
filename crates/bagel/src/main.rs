@@ -33,19 +33,34 @@ fn run(colorization: Colorization) -> Result<(), Failure> {
         .init();
 
     // the first argument is the binary which we can ignore
-    let arguments = env::args().skip(1);
+    let mut arguments = env::args().skip(1);
 
-    let header = format!("received {} arguments:", arguments.len());
-    match colorization {
-        Colorization::Disabled => println!("{header}"),
-        Colorization::Enabled => println!("{}", header.bold()),
-    };
+    let command = arguments.next().ok_or(Failure::MissingCommandArgument)?;
 
-    for argument in arguments {
-        match colorization {
-            Colorization::Disabled => println!("- `{argument}`"),
-            Colorization::Enabled => println!("{} `{}`", "-".bold(), argument),
-        };
+    match command.as_str() {
+        "help" => {
+            let header = "HELP - COMMAND OVERVIEW";
+            match colorization {
+                Colorization::Disabled => println!("{header}"),
+                Colorization::Enabled => println!("{}", header.bold().underline()),
+            }
+
+            for (command, arguments) in [("tokenize", "{filename}")] {
+                match colorization {
+                    Colorization::Disabled => println!("- `bagel {command} {arguments}`"),
+                    Colorization::Enabled => println!(
+                        "- `{} {}`",
+                        format!("bagel {command}").bold(),
+                        arguments.italic()
+                    ),
+                }
+            }
+        }
+
+        "tokenize" => {
+            println!("TODO tokenize!")
+        }
+        _ => return Err(Failure::UnknownCommand(command)),
     }
 
     Ok(())
@@ -54,6 +69,8 @@ fn run(colorization: Colorization) -> Result<(), Failure> {
 #[derive(Debug)]
 enum Failure {
     LogFileCreation(io::Error),
+    MissingCommandArgument,
+    UnknownCommand(String),
 }
 
 impl fmt::Display for Failure {
@@ -63,6 +80,12 @@ impl fmt::Display for Failure {
                 formatter,
                 "failed to create log file at `/tmp/bagel.log`: {io_error}"
             ),
+            Self::MissingCommandArgument => write!(
+                formatter,
+                "missing required first argument `command`, run `bagel help` for assistence"
+            ),
+
+            Self::UnknownCommand(command) => write!(formatter, "unknown command `{command}`"),
         }
     }
 }
