@@ -1,29 +1,27 @@
-help: 
+set quiet
+
+help:
   just --list
 
-build: 
-  cargo build
-
-check:
-  cargo clippy
-
-clean: 
+clean:
   cargo clean
 
-run *ARGS: 
-  cargo run {{ARGS}}
+check:
+  cargo clippy --all-targets
 
-test: 
-  cargo nextest run --release
+format:
+  cargo fmt
 
-test-cc: 
-  codecrafters test
+format-ci:
+  cargo fmt --check
 
-# Push to both remotes
 push:
   git push
-  just push-cc
-
-# They still use `master` for some unknown reason
-push-cc:
   git push codecrafters main:master
+
+run binary *arguments:
+  cargo run --quiet --package {{binary}} --bin {{binary}} {{arguments}}
+
+test:
+  cargo build --release --workspace --bins
+  cargo nextest run --release

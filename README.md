@@ -1,9 +1,9 @@
-# 🥯 bagel 
+# 🥯 bagel
 
 Interpreter implementation for the Lox programming language. This is part of the CodeCrafter challenge "Build your own Interpreter" which provides step by step path to achieve this, with tests that must pass to continue to the next stage.
 
-## Progress
+## Crates
 
-I work on this from time to time. It is interesting to learn how to implement a compiler. It is much harder than I thought it would be, but once you have the core logic down it's all about adding more of the same and handling exceptional corner cases.
-
-![progress banner](https://backend.codecrafters.io/progress/interpreter/2e67e859-e729-4a12-bb42-3a1e6e6ac0e7)
+- `bagel` is the tree-walk interpreter implementation
+- `salmon` is the bytecode virtual machine interpreter implementation
+- `kitchen` contains the integration tests that tests both implementations
