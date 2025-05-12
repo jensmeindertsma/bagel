@@ -23,5 +23,5 @@ run binary *arguments:
   cargo run --quiet --package {{binary}} --bin {{binary}} {{arguments}}
 
 test:
-  cargo build --release --workspace
+  cargo build --release --workspace --all-targets
   cargo nextest run --release
