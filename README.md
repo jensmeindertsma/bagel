@@ -1,6 +1,6 @@
 # 🥯 A Lox Interpreter
 
-Interpreter implementation for the Lox programming language following the "Crafting Interpreters" book by Robert Nystrom. It is also set up to be submitted to CodeCrafters to pass their tests for their "Build your own Interpreter" challenge
+Interpreter implementation for the Lox programming language following the "Crafting Interpreters" book by Robert Nystrom. It is also set up to be submitted to CodeCrafters to progress in their "Build your own Interpreter" challenge.
 
 ## Crates
 
