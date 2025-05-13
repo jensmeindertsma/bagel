@@ -1,6 +1,6 @@
-# 🥯 bagel
+# 🥯 A Lox Interpreter
 
-Interpreter implementation for the Lox programming language. This is part of the CodeCrafter challenge "Build your own Interpreter" which provides step by step path to achieve this, with tests that must pass to continue to the next stage.
+Interpreter implementation for the Lox programming language following the "Crafting Interpreters" book by Robert Nystrom. It is also set up to be submitted to CodeCrafters to pass their tests for their "Build your own Interpreter" challenge
 
 ## Crates
 
