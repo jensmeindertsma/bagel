@@ -17,16 +17,19 @@ fn main() -> impl Termination {
     let colorization = Colorization::determine();
 
     if let Err(failure) = run(colorization) {
-        let _is_codecrafters = is_codecrafters_environment();
-
         // TODO: based on is_codecrafters, print errors differently to pass their tests
+        if is_codecrafters_environment() {
+            eprintln!("TODO codecrafters error")
+        } else {
+            match colorization {
+                Colorization::Disabled => eprintln!("error: {failure}"),
+                Colorization::Enabled => {
+                    eprintln!("{}{} {failure}", "error".bold().red(), ":".bold())
+                }
+            }
+        };
 
-        match colorization {
-            Colorization::Disabled => eprintln!("error: {failure}"),
-            Colorization::Enabled => eprintln!("{}{} {failure}", "error".bold().red(), ":".bold()),
-        }
-
-        ExitCode::FAILURE
+        failure.exit_code()
     } else {
         ExitCode::SUCCESS
     }
@@ -85,6 +88,12 @@ enum Failure {
     LogFileCreation(io::Error),
     MissingArgument(&'static str),
     UnknownCommand(String),
+}
+
+impl Failure {
+    pub fn exit_code(&self) -> ExitCode {
+        ExitCode::FAILURE
+    }
 }
 
 impl fmt::Display for Failure {
