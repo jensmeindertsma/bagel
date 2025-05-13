@@ -1,5 +1,7 @@
+mod codecrafters;
 mod colors;
 
+use codecrafters::is_codecrafters_environment;
 use colors::Colorization;
 use core::fmt::{self, Formatter};
 use owo_colors::OwoColorize;
@@ -15,6 +17,10 @@ fn main() -> impl Termination {
     let colorization = Colorization::determine();
 
     if let Err(failure) = run(colorization) {
+        let _is_codecrafters = is_codecrafters_environment();
+
+        // TODO: based on is_codecrafters, print errors differently to pass their tests
+
         match colorization {
             Colorization::Disabled => eprintln!("error: {failure}"),
             Colorization::Enabled => eprintln!("{}{} {failure}", "error".bold().red(), ":".bold()),

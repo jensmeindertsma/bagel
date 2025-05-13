@@ -6,4 +6,4 @@
 #
 # Learn more: https://codecrafters.io/program-interface
 
-exec /tmp/codecrafters-build-interpreter-rust/release/bagel "$@"
+exec env CODECRAFTERS=yes /tmp/codecrafters-build-interpreter-rust/release/bagel "$@"
