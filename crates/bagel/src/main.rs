@@ -47,9 +47,10 @@ fn run(colorization: Colorization) -> Result<(), Failure> {
 
             for (command, arguments) in [("tokenize", "{filename}")] {
                 match colorization {
-                    Colorization::Disabled => println!("- `bagel {command} {arguments}`"),
+                    Colorization::Disabled => println!("* `bagel {command} {arguments}`"),
                     Colorization::Enabled => println!(
-                        "- `{} {}`",
+                        "{} `{} {}`",
+                        "*".bold().red(),
                         format!("bagel {command}").bold(),
                         arguments.italic()
                     ),
