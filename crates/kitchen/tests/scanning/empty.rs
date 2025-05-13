@@ -1,11 +1,17 @@
-use crate::common::{TemporaryFile, run_command};
+use crate::common::{create_temporary_file, run_command};
 use indoc::indoc;
 
 #[test]
 fn empty() {
-    let file = TemporaryFile::new("");
+    let contents = "";
 
-    let output = run_command(crate::BINARY, &["tokenize", file.path().to_str().unwrap()]);
+    let output = run_command(
+        crate::BINARY,
+        &[
+            "tokenize",
+            create_temporary_file(contents).path().to_str().unwrap(),
+        ],
+    );
 
     output.success().stdout(indoc! {"
         EOF  null

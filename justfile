@@ -20,7 +20,7 @@ push:
   git push codecrafters main:master
 
 run binary *arguments:
-  cargo run --quiet --package {{binary}} --bin {{binary}} {{arguments}}
+  cargo run --quiet --package {{binary}} --bin {{binary}} {{arguments}} || true
 
 test:
   cargo build --release --workspace --all-targets
