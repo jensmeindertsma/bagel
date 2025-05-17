@@ -41,17 +41,10 @@ impl Iterator for Scanner<'_> {
         match self.characters.next() {
             None => {
                 if self.done {
-                    tracing::trace!("`scanner.next()` was called again despite already being done");
-
                     None
                 } else {
-                    tracing::debug!("finished processing input, returning end of file token");
-
                     self.done = true;
-                    Some(Ok(Token {
-                        kind: TokenKind::EndOfFile,
-                        line: self.current_line,
-                    }))
+                    self.produce(TokenKind::EndOfFile)
                 }
             }
             Some(character) => {

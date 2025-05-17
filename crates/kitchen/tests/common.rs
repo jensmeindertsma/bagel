@@ -7,7 +7,7 @@ pub fn run_command(binary: &str, arguments: &[&str]) -> Assert {
 
     command.args(arguments);
 
-    command.env("COLORIZATION", "disabled");
+    command.env("CODECRAFTERS", "yes");
 
     command.assert()
 }

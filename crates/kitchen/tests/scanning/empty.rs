@@ -1,5 +1,6 @@
 use crate::common::{create_temporary_file, run_command};
 use indoc::indoc;
+use predicates::prelude::*;
 
 #[test]
 fn empty() {
@@ -13,7 +14,7 @@ fn empty() {
         ],
     );
 
-    output.success().stdout(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         EOF  null
-    "});
+    "}));
 }
