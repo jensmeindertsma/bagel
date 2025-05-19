@@ -109,7 +109,8 @@ impl fmt::Display for TokenKind {
 
         match self {
             Self::EndOfFile => write!(formatter, "EOF  null"),
-            _ => todo!(),
+            Self::LeftParenthesis => write!(formatter, "LEFT_PAREN ( null"),
+            Self::RightParenthesis => write!(formatter, "RIGHT_PAREN ) null"),
         }
     }
 }
