@@ -1,1 +1,15 @@
+mod assignment_equality;
+mod braces;
+mod division_comment;
 mod empty;
+mod identifier;
+mod lexical_error;
+mod multi_line_error;
+mod negation_inequality;
+mod number;
+mod parentheses;
+mod relational;
+mod reserved;
+mod single_character;
+mod string;
+mod whitespace;

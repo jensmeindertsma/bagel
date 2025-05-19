@@ -8,11 +8,12 @@ fn test() {
         crate::BINARY,
         &[
             "tokenize",
-            create_temporary_file("").path().to_str().unwrap(),
+            create_temporary_file("and").path().to_str().unwrap(),
         ],
     );
 
     output.success().stdout(predicate::eq(indoc! {"
+        AND and null
         EOF  null
     "}));
 }

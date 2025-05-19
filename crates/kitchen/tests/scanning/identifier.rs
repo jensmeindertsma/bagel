@@ -8,11 +8,17 @@ fn test() {
         crate::BINARY,
         &[
             "tokenize",
-            create_temporary_file("").path().to_str().unwrap(),
+            create_temporary_file("foo bar _hello")
+                .path()
+                .to_str()
+                .unwrap(),
         ],
     );
 
     output.success().stdout(predicate::eq(indoc! {"
+        IDENTIFIER foo null
+        IDENTIFIER bar null
+        IDENTIFIER _hello null
         EOF  null
     "}));
 }

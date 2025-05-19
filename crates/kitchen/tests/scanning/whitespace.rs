@@ -8,11 +8,19 @@ fn test() {
         crate::BINARY,
         &[
             "tokenize",
-            create_temporary_file("").path().to_str().unwrap(),
+            create_temporary_file(indoc! {"
+                (   
+                 )
+            "})
+            .path()
+            .to_str()
+            .unwrap(),
         ],
     );
 
     output.success().stdout(predicate::eq(indoc! {"
+        LEFT_PAREN ( null
+        RIGHT_PAREN ) null
         EOF  null
     "}));
 }

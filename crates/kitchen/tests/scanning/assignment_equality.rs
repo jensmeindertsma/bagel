@@ -8,11 +8,16 @@ fn test() {
         crate::BINARY,
         &[
             "tokenize",
-            create_temporary_file("").path().to_str().unwrap(),
+            create_temporary_file("={===}").path().to_str().unwrap(),
         ],
     );
 
     output.success().stdout(predicate::eq(indoc! {"
+        EQUAL = null
+        LEFT_BRACE { null
+        EQUAL_EQUAL == null
+        EQUAL = null
+        RIGHT_BRACE } null
         EOF  null
     "}));
 }
