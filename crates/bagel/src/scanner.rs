@@ -51,14 +51,23 @@ impl Iterator for Scanner<'_> {
                 tracing::trace!("processing next character `{character}`");
 
                 let token_kind = match character {
+                    ' ' | '\t' => return self.next(),
+
                     '\n' => {
                         self.current_line += 1;
                         return self.next();
                     }
+
+                    ',' => TokenKind::Comma,
+                    '.' => TokenKind::Dot,
                     '{' => TokenKind::LeftBrace,
-                    '}' => TokenKind::RightBrace,
                     '(' => TokenKind::LeftParenthesis,
+                    '-' => TokenKind::Minus,
+                    '+' => TokenKind::Plus,
+                    '}' => TokenKind::RightBrace,
                     ')' => TokenKind::RightParenthesis,
+                    ';' => TokenKind::Semicolon,
+                    '*' => TokenKind::Star,
 
                     _ => {
                         return self
@@ -89,11 +98,17 @@ impl fmt::Display for Token {
 
 #[derive(Debug, Clone, Copy)]
 pub enum TokenKind {
+    Comma,
+    Dot,
     EndOfFile,
     LeftBrace,
-    RightBrace,
     LeftParenthesis,
+    Minus,
+    Plus,
+    RightBrace,
     RightParenthesis,
+    Semicolon,
+    Star,
 }
 
 impl fmt::Display for TokenKind {
@@ -113,11 +128,17 @@ impl fmt::Display for TokenKind {
         // For STRING/NUMBER tokens, it holds the value of the string/number.
 
         match self {
+            Self::Comma => write!(formatter, "COMMA , null"),
+            Self::Dot => write!(formatter, "DOT . null"),
             Self::EndOfFile => write!(formatter, "EOF  null"),
             Self::LeftBrace => write!(formatter, "LEFT_BRACE {{ null"),
-            Self::RightBrace => write!(formatter, "RIGHT_BRACE }} null"),
             Self::LeftParenthesis => write!(formatter, "LEFT_PAREN ( null"),
+            Self::Minus => write!(formatter, "MINUS - null"),
+            Self::Plus => write!(formatter, "PLUS + null"),
+            Self::RightBrace => write!(formatter, "RIGHT_BRACE }} null"),
             Self::RightParenthesis => write!(formatter, "RIGHT_PAREN ) null"),
+            Self::Semicolon => write!(formatter, "SEMICOLON ; null"),
+            Self::Star => write!(formatter, "STAR * null"),
         }
     }
 }

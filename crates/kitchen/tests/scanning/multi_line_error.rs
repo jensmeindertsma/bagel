@@ -10,7 +10,7 @@ fn test() {
             "tokenize",
             create_temporary_file(indoc! {"
                 # (
-                )   @
+                )\t@
             "})
             .path()
             .to_str()
