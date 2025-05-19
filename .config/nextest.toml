@@ -1,2 +1,3 @@
 [profile.default]
 fail-fast = false
+final-status-level = "all"
