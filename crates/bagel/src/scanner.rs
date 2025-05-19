@@ -55,8 +55,11 @@ impl Iterator for Scanner<'_> {
                         self.current_line += 1;
                         return self.next();
                     }
+                    '{' => TokenKind::LeftBrace,
+                    '}' => TokenKind::RightBrace,
                     '(' => TokenKind::LeftParenthesis,
                     ')' => TokenKind::RightParenthesis,
+
                     _ => {
                         return self
                             .fail(|line| ScannerError::UnexpectedCharacter { character, line });
@@ -87,6 +90,8 @@ impl fmt::Display for Token {
 #[derive(Debug, Clone, Copy)]
 pub enum TokenKind {
     EndOfFile,
+    LeftBrace,
+    RightBrace,
     LeftParenthesis,
     RightParenthesis,
 }
@@ -109,6 +114,8 @@ impl fmt::Display for TokenKind {
 
         match self {
             Self::EndOfFile => write!(formatter, "EOF  null"),
+            Self::LeftBrace => write!(formatter, "LEFT_BRACE {{ null"),
+            Self::RightBrace => write!(formatter, "RIGHT_BRACE }} null"),
             Self::LeftParenthesis => write!(formatter, "LEFT_PAREN ( null"),
             Self::RightParenthesis => write!(formatter, "RIGHT_PAREN ) null"),
         }

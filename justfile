@@ -22,6 +22,6 @@ push:
 run binary *arguments:
   cargo run --quiet --package {{binary}} --bin {{binary}} {{arguments}} || true
 
-test:
+test *arguments:
   cargo build --release --workspace --all-targets
-  cargo nextest run --release
+  cargo nextest run --release {{arguments}}
