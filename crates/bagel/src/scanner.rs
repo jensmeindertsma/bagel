@@ -54,48 +54,46 @@ impl Iterator for Scanner<'_> {
 
         tracing::debug!("processing token {}", next_character);
 
-        loop {
-            let started = match next_character {
-                ' ' | '\t' => return self.next(),
+        let started = match next_character {
+            ' ' | '\t' => return self.next(),
 
-                '\n' => {
-                    self.current_line += 1;
-                    return self.next();
-                }
-
-                ',' => return self.produce(TokenKind::Comma),
-                '.' => return self.produce(TokenKind::Dot),
-                '=' => Started::Either(TokenKind::Equal, TokenKind::EqualEqual),
-                '{' => return self.produce(TokenKind::LeftBrace),
-                '(' => return self.produce(TokenKind::LeftParenthesis),
-                '-' => return self.produce(TokenKind::Minus),
-                '+' => return self.produce(TokenKind::Plus),
-                '}' => return self.produce(TokenKind::RightBrace),
-                ')' => return self.produce(TokenKind::RightParenthesis),
-                ';' => return self.produce(TokenKind::Semicolon),
-                '*' => return self.produce(TokenKind::Star),
-
-                character => {
-                    return self.fail(ScannerError::UnexpectedCharacter {
-                        character,
-                        line: self.current_line,
-                    });
-                }
-            };
-
-            tracing::debug!("handling multi-character token");
-
-            match started {
-                Started::Either(TokenKind::Equal, TokenKind::EqualEqual) => {
-                    if let Some('=') = self.characters.peek() {
-                        self.characters.next();
-                        return self.produce(TokenKind::EqualEqual);
-                    } else {
-                        return self.produce(TokenKind::Equal);
-                    }
-                }
-                _ => todo!(),
+            '\n' => {
+                self.current_line += 1;
+                return self.next();
             }
+
+            ',' => return self.produce(TokenKind::Comma),
+            '.' => return self.produce(TokenKind::Dot),
+            '=' => Started::Either(TokenKind::Equal, TokenKind::EqualEqual),
+            '{' => return self.produce(TokenKind::LeftBrace),
+            '(' => return self.produce(TokenKind::LeftParenthesis),
+            '-' => return self.produce(TokenKind::Minus),
+            '+' => return self.produce(TokenKind::Plus),
+            '}' => return self.produce(TokenKind::RightBrace),
+            ')' => return self.produce(TokenKind::RightParenthesis),
+            ';' => return self.produce(TokenKind::Semicolon),
+            '*' => return self.produce(TokenKind::Star),
+
+            character => {
+                return self.fail(ScannerError::UnexpectedCharacter {
+                    character,
+                    line: self.current_line,
+                });
+            }
+        };
+
+        tracing::debug!("handling multi-character token");
+
+        match started {
+            Started::Either(TokenKind::Equal, TokenKind::EqualEqual) => {
+                if let Some('=') = self.characters.peek() {
+                    self.characters.next();
+                    return self.produce(TokenKind::EqualEqual);
+                } else {
+                    return self.produce(TokenKind::Equal);
+                }
+            }
+            _ => todo!(),
         }
     }
 }
