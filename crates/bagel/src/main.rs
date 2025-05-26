@@ -107,11 +107,13 @@ fn run(
                 Err(error) => return Err(Failure::FileRead { path, error }),
             };
 
+            tracing::debug!("contents: {}", contents);
+
             let scanner = Scanner::new(&contents);
             let mut errors = Vec::new();
 
             for result in scanner {
-                //tracing::trace!("scanner produced {result:?}");
+                tracing::trace!("scanner produced {result:?}");
                 match result {
                     Ok(token) => {
                         println!("{token}")

@@ -8,7 +8,7 @@ fn test() {
         crate::BINARY,
         &[
             "tokenize",
-            create_temporary_file("={===}").path().to_str().unwrap(),
+            create_temporary_file("!!,;").path().to_str().unwrap(),
         ],
     );
 
