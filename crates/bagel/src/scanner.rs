@@ -24,12 +24,7 @@ impl<'a> Scanner<'a> {
         }))
     }
 
-    fn fail(
-        &self,
-        closure: impl FnOnce(usize) -> ScannerError,
-    ) -> Option<Result<Token, ScannerError>> {
-        let error = closure(self.current_line);
-
+    fn fail(&self, error: ScannerError) -> Option<Result<Token, ScannerError>> {
         Some(Err(error))
     }
 }
@@ -38,46 +33,68 @@ impl Iterator for Scanner<'_> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.characters.next() {
+        enum Started {
+            Either(TokenKind, TokenKind),
+            Identifier,
+            Number,
+            String,
+        }
+
+        let next_character = match self.characters.next() {
+            Some(character) => character,
             None => {
                 if self.done {
-                    None
+                    return None;
                 } else {
                     self.done = true;
-                    self.produce(TokenKind::EndOfFile)
+                    return self.produce(TokenKind::EndOfFile);
                 }
             }
-            Some(character) => {
-                tracing::trace!("processing next character `{character}`");
+        };
 
-                let token_kind = match character {
-                    ' ' | '\t' => return self.next(),
+        tracing::debug!("processing token {}", next_character);
 
-                    '\n' => {
-                        self.current_line += 1;
-                        return self.next();
+        loop {
+            let started = match next_character {
+                ' ' | '\t' => return self.next(),
+
+                '\n' => {
+                    self.current_line += 1;
+                    return self.next();
+                }
+
+                ',' => return self.produce(TokenKind::Comma),
+                '.' => return self.produce(TokenKind::Dot),
+                '=' => Started::Either(TokenKind::Equal, TokenKind::EqualEqual),
+                '{' => return self.produce(TokenKind::LeftBrace),
+                '(' => return self.produce(TokenKind::LeftParenthesis),
+                '-' => return self.produce(TokenKind::Minus),
+                '+' => return self.produce(TokenKind::Plus),
+                '}' => return self.produce(TokenKind::RightBrace),
+                ')' => return self.produce(TokenKind::RightParenthesis),
+                ';' => return self.produce(TokenKind::Semicolon),
+                '*' => return self.produce(TokenKind::Star),
+
+                character => {
+                    return self.fail(ScannerError::UnexpectedCharacter {
+                        character,
+                        line: self.current_line,
+                    });
+                }
+            };
+
+            tracing::debug!("handling multi-character token");
+
+            match started {
+                Started::Either(TokenKind::Equal, TokenKind::EqualEqual) => {
+                    if let Some('=') = self.characters.peek() {
+                        self.characters.next();
+                        return self.produce(TokenKind::EqualEqual);
+                    } else {
+                        return self.produce(TokenKind::Equal);
                     }
-
-                    ',' => TokenKind::Comma,
-                    '.' => TokenKind::Dot,
-                    '{' => TokenKind::LeftBrace,
-                    '(' => TokenKind::LeftParenthesis,
-                    '-' => TokenKind::Minus,
-                    '+' => TokenKind::Plus,
-                    '}' => TokenKind::RightBrace,
-                    ')' => TokenKind::RightParenthesis,
-                    ';' => TokenKind::Semicolon,
-                    '*' => TokenKind::Star,
-
-                    _ => {
-                        return self
-                            .fail(|line| ScannerError::UnexpectedCharacter { character, line });
-                    }
-                };
-
-                tracing::trace!("producing new token `{token_kind:?}`");
-
-                self.produce(token_kind)
+                }
+                _ => todo!(),
             }
         }
     }
@@ -101,6 +118,8 @@ pub enum TokenKind {
     Comma,
     Dot,
     EndOfFile,
+    Equal,
+    EqualEqual,
     LeftBrace,
     LeftParenthesis,
     Minus,
@@ -131,6 +150,8 @@ impl fmt::Display for TokenKind {
             Self::Comma => write!(formatter, "COMMA , null"),
             Self::Dot => write!(formatter, "DOT . null"),
             Self::EndOfFile => write!(formatter, "EOF  null"),
+            Self::Equal => write!(formatter, "EQUAL = null"),
+            Self::EqualEqual => write!(formatter, "EQUAL_EQUAL == null"),
             Self::LeftBrace => write!(formatter, "LEFT_BRACE {{ null"),
             Self::LeftParenthesis => write!(formatter, "LEFT_PAREN ( null"),
             Self::Minus => write!(formatter, "MINUS - null"),
@@ -145,12 +166,16 @@ impl fmt::Display for TokenKind {
 
 #[derive(Debug, Clone)]
 pub enum ScannerError {
+    UnexpectedEndOfFile { line: usize },
     UnexpectedCharacter { character: char, line: usize },
 }
 
 impl fmt::Display for ScannerError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            ScannerError::UnexpectedEndOfFile { line } => {
+                write!(formatter, "unexpected end of file on line {line}")
+            }
             Self::UnexpectedCharacter { character, line } => write!(
                 formatter,
                 "unexpected character `{character}` on line {line}"

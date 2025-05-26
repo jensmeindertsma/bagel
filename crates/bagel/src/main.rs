@@ -28,6 +28,7 @@ fn main() -> impl Termination {
                             ScannerError::UnexpectedCharacter { character, line } => {
                                 eprintln!("[line {line}] Error: Unexpected character: {character}")
                             }
+                            _ => todo!(),
                         }
                     }
                 }
@@ -110,17 +111,12 @@ fn run(
             let mut errors = Vec::new();
 
             for result in scanner {
+                //tracing::trace!("scanner produced {result:?}");
                 match result {
                     Ok(token) => {
-                        tracing::debug!("scanner produced token: {:?}", token);
-
                         println!("{token}")
                     }
-                    Err(error) => {
-                        tracing::error!("scanner produced error: {:?}", error);
-
-                        errors.push(error)
-                    }
+                    Err(error) => errors.push(error),
                 }
             }
 
