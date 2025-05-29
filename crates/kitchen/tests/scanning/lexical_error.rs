@@ -14,13 +14,13 @@ fn test() {
 
     output
         .code(predicate::eq(65))
-        .stdout(predicate::str::diff(indoc! {"
+        .stdout(predicate::eq(indoc! {"
             COMMA , null
             DOT . null
             LEFT_PAREN ( null
             EOF  null
     "}))
-        .stderr(predicate::str::diff(indoc! {"
+        .stderr(predicate::eq(indoc! {"
             [line 1] Error: Unexpected character: $
             [line 1] Error: Unexpected character: #
     "}));

@@ -18,7 +18,7 @@ fn test() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         LEFT_PAREN ( null
         RIGHT_PAREN ) null
         EOF  null

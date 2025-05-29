@@ -6,10 +6,13 @@ use predicates::prelude::*;
 fn test() {
     let output = run_command(
         crate::BINARY,
-        &["scan", create_temporary_file("").path().to_str().unwrap()],
+        &[
+            "scan",
+            create_temporary_file("").path().to_str().unwrap(),
+        ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         EOF  null
     "}));
 }

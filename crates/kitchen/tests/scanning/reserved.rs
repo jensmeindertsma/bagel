@@ -12,7 +12,7 @@ fn test() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         AND and null
         EOF  null
     "}));

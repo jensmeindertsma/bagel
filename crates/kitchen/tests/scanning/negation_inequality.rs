@@ -12,7 +12,7 @@ fn test() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         BANG ! null
         BANG_EQUAL != null
         EQUAL_EQUAL == null

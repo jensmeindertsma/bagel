@@ -12,7 +12,7 @@ fn slash() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         SLASH / null
         LEFT_PAREN ( null
         RIGHT_PAREN ) null
@@ -33,7 +33,7 @@ fn comment() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         LEFT_PAREN ( null
         RIGHT_PAREN ) null
         EOF  null

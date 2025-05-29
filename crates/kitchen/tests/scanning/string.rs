@@ -15,7 +15,7 @@ fn success() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         STRING \"foo baz\" foo baz
         EOF  null
     "}));
@@ -33,10 +33,10 @@ fn failure() {
 
     output
         .code(predicate::eq(65))
-        .stdout(predicate::str::diff(indoc! {"
+        .stdout(predicate::eq(indoc! {"
             EOF  null
     "}))
-        .stderr(predicate::str::diff(indoc! {"
+        .stderr(predicate::eq(indoc! {"
             [line 1] Error: Unterminated string.
     "}));
 }

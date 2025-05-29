@@ -15,7 +15,7 @@ fn test() {
         ],
     );
 
-    output.success().stdout(predicate::str::diff(indoc! {"
+    output.success().stdout(predicate::eq(indoc! {"
         IDENTIFIER foo null
         IDENTIFIER bar null
         IDENTIFIER _hello null
