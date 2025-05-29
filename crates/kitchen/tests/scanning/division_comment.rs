@@ -7,7 +7,7 @@ fn slash() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
+            "scan",
             create_temporary_file("/()").path().to_str().unwrap(),
         ],
     );
@@ -25,7 +25,7 @@ fn comment() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
+            "scan",
             create_temporary_file("() // Comment")
                 .path()
                 .to_str()

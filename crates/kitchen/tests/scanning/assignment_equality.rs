@@ -7,8 +7,8 @@ fn test() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
-            create_temporary_file("!!,;").path().to_str().unwrap(),
+            "scan",
+            create_temporary_file("={===}").path().to_str().unwrap(),
         ],
     );
 

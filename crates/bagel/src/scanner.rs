@@ -1,8 +1,6 @@
 use core::fmt::{self, Formatter};
 use std::{error::Error, iter::Peekable, str::Chars};
 
-use tracing::instrument;
-
 #[derive(Debug, Clone)]
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
@@ -20,6 +18,8 @@ impl<'a> Scanner<'a> {
     }
 
     fn produce(&self, kind: TokenKind) -> Option<Result<Token, ScannerError>> {
+        tracing::info!("producing token `{kind:?}` (line {})", self.current_line);
+
         Some(Ok(Token {
             kind,
             line: self.current_line,
@@ -27,6 +27,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn fail(&self, error: ScannerError) -> Option<Result<Token, ScannerError>> {
+        tracing::error!("producing error `{error:?}`");
         Some(Err(error))
     }
 
@@ -51,7 +52,6 @@ impl Iterator for Scanner<'_> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        tracing::info!("next token");
         loop {
             let next_character = match self.characters.next() {
                 Some(character) => character,
@@ -65,60 +65,99 @@ impl Iterator for Scanner<'_> {
                 }
             };
 
-            tracing::debug!("processing token {}", next_character);
+            if !matches!(next_character, ' ' | '\t' | '\n') {
+                tracing::debug!("scanning next token `{}`", next_character);
+            }
 
-            return match next_character {
+            match next_character {
                 ' ' | '\t' => continue,
 
                 '\n' => {
                     self.current_line += 1;
+                    tracing::debug!("now scanning line {}", self.current_line);
                     continue;
                 }
 
-                '!' => self.if_next_else('=', TokenKind::BangEqual, TokenKind::Bang),
+                '(' => return self.produce(TokenKind::LeftParenthesis),
+                ')' => return self.produce(TokenKind::RightParenthesis),
 
-                ',' => self.produce(TokenKind::Comma),
-                '.' => self.produce(TokenKind::Dot),
+                '{' => return self.produce(TokenKind::LeftBrace),
+                '}' => return self.produce(TokenKind::RightBrace),
 
-                '=' => self.if_next_else('=', TokenKind::EqualEqual, TokenKind::Equal),
+                ',' => return self.produce(TokenKind::Comma),
+                '.' => return self.produce(TokenKind::Dot),
+                ';' => return self.produce(TokenKind::Semicolon),
 
-                '>' => self.if_next_else('=', TokenKind::GreaterEqual, TokenKind::Greater),
+                '!' => return self.if_next_else('=', TokenKind::BangEqual, TokenKind::Bang),
+                '=' => return self.if_next_else('=', TokenKind::EqualEqual, TokenKind::Equal),
 
-                '{' => self.produce(TokenKind::LeftBrace),
-                '(' => self.produce(TokenKind::LeftParenthesis),
+                '<' => return self.if_next_else('=', TokenKind::LessEqual, TokenKind::Less),
+                '>' => return self.if_next_else('=', TokenKind::GreaterEqual, TokenKind::Greater),
 
-                '<' => self.if_next_else('=', TokenKind::LessEqual, TokenKind::Less),
-
-                '-' => self.produce(TokenKind::Minus),
-                '+' => self.produce(TokenKind::Plus),
-                '}' => self.produce(TokenKind::RightBrace),
-                ')' => self.produce(TokenKind::RightParenthesis),
-                ';' => self.produce(TokenKind::Semicolon),
-
+                '+' => return self.produce(TokenKind::Plus),
+                '-' => return self.produce(TokenKind::Minus),
+                '*' => return self.produce(TokenKind::Star),
                 '/' => {
-                    tracing::trace!("found /");
+                    // Here we need to handle both slash tokens and comments.
+                    //
+                    // 1. We peek at the next character and yield a slash token
+                    // if it's not a slash.
+                    //
+                    // 2. If it is a slash we enter a loop of peek & consume:
+                    // we consume (ignore) the next characters until we hit the
+                    // end of the line. We do not support multi line comments.
+
                     if let Some('/') = self.characters.peek() {
-                        tracing::trace!("found second / -> //");
-                        // Handling comments by going through every
-                        // character until we hit a newline.
                         while let Some(c) = self.characters.peek() {
                             if *c == '\n' {
-                                // Don't forget to increase line counter.
-                                self.current_line += 1;
                                 break;
+                            } else {
+                                self.characters.next();
                             }
-                            // Not a newline, move to next character.
-                            self.characters.next();
                         }
 
-                        // Move on back into the scanning loop.
+                        // End of line, resume the scanning loop.
+                        self.current_line += 1;
+
                         continue;
                     } else {
                         return self.produce(TokenKind::Slash);
                     }
                 }
 
-                '*' => self.produce(TokenKind::Star),
+                '"' => {
+                    // Handling strings is much like handling comments
+                    // above, except we keep track of the characters
+                    // we encounter. We also support multi-line strings
+                    // so we need to handle newline characters.
+
+                    tracing::trace!("handling string");
+
+                    let mut string = String::new();
+                    while let Some(c) = self.characters.peek() {
+                        match *c {
+                            '"' => {
+                                tracing::trace!("reached end of string `{string}`");
+                                self.characters.next();
+                                return self.produce(TokenKind::String(string));
+                            }
+                            '\n' => {
+                                self.characters.next();
+                                tracing::trace!("encountered newline while handling string");
+                            }
+                            character => {
+                                self.characters.next();
+                                tracing::trace!("adding new character `{character}`to the string");
+                                string.push(character)
+                            }
+                        }
+                    }
+
+                    tracing::warn!("reached EOF without closing string");
+                    return self.fail(ScannerError::UnexpectedEndOfFile {
+                        line: self.current_line,
+                    });
+                }
 
                 other => {
                     return self.fail(ScannerError::UnexpectedCharacter {
@@ -126,12 +165,12 @@ impl Iterator for Scanner<'_> {
                         line: self.current_line,
                     });
                 }
-            };
+            }
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub line: usize,
@@ -144,7 +183,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum TokenKind {
     Bang,
     BangEqual,
@@ -166,6 +205,7 @@ pub enum TokenKind {
     Semicolon,
     Slash,
     Star,
+    String(String),
 }
 
 impl fmt::Display for TokenKind {
@@ -182,7 +222,7 @@ impl fmt::Display for TokenKind {
         //
         // <literal>: The literal value of the token.
         // For most tokens this is null.
-        // For STRING/NUMBER tokens, it holds the value of the string/number.
+        // For STRING/NUMBER tokens, it is the value of the string/number.
 
         match self {
             Self::Bang => write!(formatter, "BANG ! null"),
@@ -205,6 +245,7 @@ impl fmt::Display for TokenKind {
             Self::Semicolon => write!(formatter, "SEMICOLON ; null"),
             Self::Slash => write!(formatter, "SLASH / null"),
             Self::Star => write!(formatter, "STAR * null"),
+            Self::String(string) => write!(formatter, "STRING \"{string}\" {string}"),
         }
     }
 }
@@ -212,6 +253,7 @@ impl fmt::Display for TokenKind {
 #[derive(Debug, Clone)]
 pub enum ScannerError {
     UnexpectedCharacter { character: char, line: usize },
+    UnexpectedEndOfFile { line: usize },
 }
 
 impl fmt::Display for ScannerError {
@@ -221,6 +263,9 @@ impl fmt::Display for ScannerError {
                 formatter,
                 "unexpected character `{character}` on line {line}"
             ),
+            Self::UnexpectedEndOfFile { line } => {
+                write!(formatter, "unexpected end of line on line {line}")
+            }
         }
     }
 }

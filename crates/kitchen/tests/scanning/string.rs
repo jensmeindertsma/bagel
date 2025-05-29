@@ -7,7 +7,7 @@ fn success() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
+            "scan",
             create_temporary_file("\"foo baz\"")
                 .path()
                 .to_str()
@@ -26,7 +26,7 @@ fn failure() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
+            "scan",
             create_temporary_file("\"bar").path().to_str().unwrap(),
         ],
     );

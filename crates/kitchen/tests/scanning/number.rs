@@ -6,10 +6,7 @@ use predicates::prelude::*;
 fn integer() {
     let output = run_command(
         crate::BINARY,
-        &[
-            "tokenize",
-            create_temporary_file("42").path().to_str().unwrap(),
-        ],
+        &["scan", create_temporary_file("42").path().to_str().unwrap()],
     );
 
     output.success().stdout(predicate::eq(indoc! {"
@@ -23,7 +20,7 @@ fn decimal() {
     let output = run_command(
         crate::BINARY,
         &[
-            "tokenize",
+            "scan",
             create_temporary_file("1234.1234").path().to_str().unwrap(),
         ],
     );

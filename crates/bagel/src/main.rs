@@ -14,6 +14,11 @@ use std::{
 use tracing::Level;
 
 fn main() -> impl Termination {
+    tracing_subscriber::fmt()
+        .with_max_level(Level::TRACE)
+        .with_writer(File::create("/tmp/bagel.log").expect("writer should be initialized"))
+        .init();
+
     let (environment, colorization) = Environment::determine();
 
     if let Err(failure) = run(env::args().skip(1), colorization) {
@@ -28,22 +33,22 @@ fn main() -> impl Termination {
                             ScannerError::UnexpectedCharacter { character, line } => {
                                 eprintln!("[line {line}] Error: Unexpected character: {character}")
                             }
-                            _ => todo!(),
+                            ScannerError::UnexpectedEndOfFile { line } => {
+                                eprintln!("[line {line}] Error: Unterminated string.")
+                            }
                         }
                     }
                 }
-                // Print errors that don't require special formatting as normal
-                // (this would include errors that are not tested on their output).
+
+                // Print other errors as normal despite the environment
+                // (these errors are not tested on their output).
                 other => print_failure(other, colorization),
             }
         } else {
-            // When we are not running in a testing environment we print
-            // errors like usual (as defined in their `Display` implementation).
+            // Print according to the `Display` implementation.
             print_failure(&failure, colorization)
         }
 
-        // The exit code on termination is determined by the kind failure.
-        // See the method implementation for the specific exit codes.
         failure.exit_code()
     } else {
         ExitCode::SUCCESS
@@ -54,11 +59,6 @@ fn run(
     arguments: impl IntoIterator<Item = String>,
     colorization: Colorization,
 ) -> Result<(), Failure> {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
-        .with_writer(File::create("/tmp/bagel.log").map_err(Failure::LogFileCreation)?)
-        .init();
-
     // The first argument is the binary name/path which we can ignore.
     let mut arguments = arguments.into_iter();
 
@@ -68,15 +68,13 @@ fn run(
 
     match command.as_str() {
         "help" => {
-            tracing::info!("running command `help`");
-
             let header = "HELP - COMMAND OVERVIEW";
             match colorization {
                 Colorization::Disabled => println!("{header}"),
                 Colorization::Enabled => println!("{}", header.bold().underline()),
             }
 
-            for (command, arguments) in [("tokenize", "{file}")] {
+            for (command, arguments) in [("scan", "{file}")] {
                 match colorization {
                     Colorization::Disabled => println!("* `bagel {command} {arguments}`"),
                     Colorization::Enabled => println!(
@@ -89,36 +87,24 @@ fn run(
             }
         }
 
-        "tokenize" => {
-            tracing::info!("running command `tokenize`");
-
+        // I prefer `scan` but CodeCrafters expects `tokenize`.
+        "scan" | "tokenize" => {
             let path = arguments.next().ok_or(Failure::MissingArgument("file"))?;
 
-            let contents = match fs::read_to_string(&path) {
-                Ok(contents) => {
-                    tracing::trace!(
-                        "read {} characters from the file at `{}`",
-                        contents.len(),
-                        path
-                    );
-
-                    contents
-                }
-                Err(error) => return Err(Failure::FileRead { path, error }),
-            };
-
-            tracing::debug!("contents: {}", contents);
+            let contents =
+                fs::read_to_string(&path).map_err(|error| Failure::Read { path, error })?;
 
             let scanner = Scanner::new(&contents);
             let mut errors = Vec::new();
 
             for result in scanner {
-                tracing::trace!("scanner produced {result:?}");
                 match result {
                     Ok(token) => {
-                        println!("{token}")
+                        println!("{token}");
                     }
-                    Err(error) => errors.push(error),
+                    Err(error) => {
+                        errors.push(error);
+                    }
                 }
             }
 
@@ -127,8 +113,6 @@ fn run(
             }
         }
         _ => {
-            tracing::error!("unknown command `{}`", command);
-
             return Err(Failure::UnknownCommand(command));
         }
     }
@@ -138,8 +122,7 @@ fn run(
 
 #[derive(Debug)]
 enum Failure {
-    FileRead { path: String, error: io::Error },
-    LogFileCreation(io::Error),
+    Read { path: String, error: io::Error },
     MissingArgument(&'static str),
     Scanner(Vec<ScannerError>),
     UnknownCommand(String),
@@ -157,14 +140,9 @@ impl Failure {
 impl fmt::Display for Failure {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::FileRead { path, error } => {
+            Self::Read { path, error } => {
                 write!(formatter, "failed to read source file `{path}`: {error}")
             }
-
-            Self::LogFileCreation(io_error) => write!(
-                formatter,
-                "failed to create log file at `/tmp/bagel.log`: {io_error}"
-            ),
 
             Self::MissingArgument(argument) => write!(
                 formatter,
