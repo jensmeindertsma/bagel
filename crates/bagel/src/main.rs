@@ -7,9 +7,8 @@ use owo_colors::OwoColorize;
 use scanner::{Scanner, ScannerError};
 use std::{
     env,
-    fmt::Display,
     fs::{self, File},
-    io::{self, Write},
+    io,
     process::{ExitCode, Termination},
 };
 use tracing::Level;
@@ -37,18 +36,17 @@ fn main() -> impl Termination {
                             ScannerError::UnexpectedEndOfFile { line } => {
                                 eprintln!("[line {line}] Error: Unterminated string.")
                             }
-                            _ => print_error(&failure, colorization),
                         }
                     }
                 }
 
                 // Print other errors as normal despite the environment
                 // (these errors are not tested on their output).
-                other => print_error(other, colorization),
+                other => print_failure(other, colorization),
             }
         } else {
             // Print according to the `Display` implementation.
-            print_error(&failure, colorization)
+            print_failure(&failure, colorization)
         }
 
         failure.exit_code()
@@ -64,74 +62,31 @@ fn run(
     // The first argument is the binary name/path which we can ignore.
     let mut arguments = arguments.into_iter();
 
-    match arguments.next() {
-        None => start_playground(colorization),
-        Some(command) => return handle_command(command, arguments),
-    }
-}
+    let Some(command) = arguments.next() else {
+        todo!("implement REPL");
+    };
 
-fn start_playground(colorization: Colorization) -> Result<(), Failure> {
-    println!(
-        "{}",
-        "Welcome to the interactive playground".bold().underline()
-    );
-    println!(
-        "{} {}",
-        "->".blue(),
-        "run a command with arguments to get output"
-    );
-
-    let mut input = String::new();
-    loop {
-        print!("{} ", ">".bold());
-
-        io::stdout().flush().expect("flushing should work");
-
-        io::stdin()
-            .read_line(&mut input)
-            .expect("reading input should succeed");
-
-        if input.is_empty() {
-            continue;
-        }
-
-        if matches!(input.as_str(), "quit" | "exit") {
-            return Ok(());
-        }
-
-        let mut arguments = input.split_whitespace();
-
-        let command = arguments.next().expect("arguments should not be empty");
-        match command {
-            "scan" | "tokenize" => {
-                let Some(text) = arguments.next() else {
-                    print_error("you must provide input to the scanner", colorization);
-
-                    input.clear();
-                    continue;
-                };
-
-                match scan(text) {
-                    Err(errors) => {
-                        eprintln!("Encountered errors:");
-                        for error in errors {
-                            eprintln!("1. {error}")
-                        }
-                    }
-                };
-            }
-            _ => print_error(Failure::UnknownCommand(command.to_owned()), colorization),
-        }
-
-        input.clear();
-    }
-}
-
-fn handle_command(
-    command: String,
-    mut arguments: impl Iterator<Item = String>,
-) -> Result<(), Failure> {
     match command.as_str() {
+        "help" => {
+            let header = "HELP - COMMAND OVERVIEW";
+            match colorization {
+                Colorization::Disabled => println!("{header}"),
+                Colorization::Enabled => println!("{}", header.bold().underline()),
+            }
+
+            for (command, arguments) in [("scan", "{file}")] {
+                match colorization {
+                    Colorization::Disabled => println!("* `bagel {command} {arguments}`"),
+                    Colorization::Enabled => println!(
+                        "{} `{} {}`",
+                        "*".bold().red(),
+                        format!("bagel {command}").bold(),
+                        arguments.italic()
+                    ),
+                }
+            }
+        }
+
         // I prefer `scan` but CodeCrafters expects `tokenize`.
         "scan" | "tokenize" => {
             let path = arguments.next().ok_or(Failure::MissingArgument("file"))?;
@@ -139,35 +94,27 @@ fn handle_command(
             let contents =
                 fs::read_to_string(&path).map_err(|error| Failure::Read { path, error })?;
 
-            if let Err(errors) = scan(&contents) {
+            let scanner = Scanner::new(&contents);
+            let mut errors = Vec::new();
+
+            for result in scanner {
+                match result {
+                    Ok(token) => {
+                        println!("{token}");
+                    }
+                    Err(error) => {
+                        errors.push(error);
+                    }
+                }
+            }
+
+            if !errors.is_empty() {
                 return Err(Failure::Scanner(errors));
-            };
+            }
         }
         _ => {
             return Err(Failure::UnknownCommand(command));
         }
-    };
-
-    Ok(())
-}
-
-fn scan(input: &str) -> Result<(), Vec<ScannerError>> {
-    let scanner = Scanner::new(&input);
-    let mut errors = Vec::new();
-
-    for result in scanner {
-        match result {
-            Ok(token) => {
-                println!("{token}");
-            }
-            Err(error) => {
-                errors.push(error);
-            }
-        }
-    }
-
-    if !errors.is_empty() {
-        return Err(errors);
     }
 
     Ok(())
@@ -197,9 +144,10 @@ impl fmt::Display for Failure {
                 write!(formatter, "failed to read source file `{path}`: {error}")
             }
 
-            Self::MissingArgument(argument) => {
-                write!(formatter, "missing required argument `{argument}`")
-            }
+            Self::MissingArgument(argument) => write!(
+                formatter,
+                "missing required argument `{argument}`, run `bagel help` for assistence"
+            ),
 
             Self::Scanner(errors) => {
                 for error in errors {
@@ -209,16 +157,19 @@ impl fmt::Display for Failure {
                 Ok(())
             }
 
-            Self::UnknownCommand(command) => write!(formatter, "unknown command `{command}`"),
+            Self::UnknownCommand(command) => write!(
+                formatter,
+                "unknown command `{command}`, run `bagel help` for assistence"
+            ),
         }
     }
 }
 
-fn print_error(error: impl Display, colorization: Colorization) {
+fn print_failure(failure: &Failure, colorization: Colorization) {
     match colorization {
-        Colorization::Disabled => eprintln!("error: {error}"),
+        Colorization::Disabled => eprintln!("error: {failure}"),
         Colorization::Enabled => {
-            eprintln!("{}{} {error}", "error".bold().red(), ":".bold())
+            eprintln!("{}{} {failure}", "error".bold().red(), ":".bold())
         }
     }
 }

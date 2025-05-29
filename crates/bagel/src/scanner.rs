@@ -53,25 +53,28 @@ impl Iterator for Scanner<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let Some(next_character) = self.characters.next() else {
-                if self.done {
-                    return None;
-                } else {
-                    tracing::info!("reached end of file");
-                    self.done = true;
-                    return self.produce(TokenKind::EndOfFile);
+            let next_character = match self.characters.next() {
+                Some(character) => character,
+                None => {
+                    if self.done {
+                        return None;
+                    } else {
+                        self.done = true;
+                        return self.produce(TokenKind::EndOfFile);
+                    }
                 }
             };
 
+            if !matches!(next_character, ' ' | '\t' | '\n') {
+                tracing::debug!("scanning next token `{}`", next_character);
+            }
+
             match next_character {
+                ' ' | '\t' => continue,
+
                 '\n' => {
                     self.current_line += 1;
-                    tracing::debug!("scanning next line (line {})", self.current_line);
-                    continue;
-                }
-
-                character if character.is_whitespace() => {
-                    tracing::trace!("skipping over whitespace");
+                    tracing::debug!("now scanning line {}", self.current_line);
                     continue;
                 }
 
@@ -94,7 +97,6 @@ impl Iterator for Scanner<'_> {
                 '+' => return self.produce(TokenKind::Plus),
                 '-' => return self.produce(TokenKind::Minus),
                 '*' => return self.produce(TokenKind::Star),
-
                 '/' => {
                     // Here we need to handle both slash tokens and comments.
                     //
@@ -129,16 +131,11 @@ impl Iterator for Scanner<'_> {
                     // we encounter. We also support multi-line strings
                     // so we need to handle newline characters.
 
-                    // TODO: figure out spans
-                    // let span = tracing::trace_span!("string");
-                    // let enter = span.enter();
-
                     tracing::trace!("handling string");
 
                     let mut string = String::new();
-
-                    while let Some(next) = self.characters.peek() {
-                        match *next {
+                    while let Some(c) = self.characters.peek() {
+                        match *c {
                             '"' => {
                                 tracing::trace!("reached end of string `{string}`");
                                 self.characters.next();
@@ -157,37 +154,9 @@ impl Iterator for Scanner<'_> {
                     }
 
                     tracing::warn!("reached EOF without closing string");
-
                     return self.fail(ScannerError::UnexpectedEndOfFile {
                         line: self.current_line,
                     });
-                }
-
-                character if character.is_ascii_digit() => {
-                    tracing::trace!("handling number");
-
-                    let mut number = String::new();
-
-                    while let Some(next) = self.characters.peek() {
-                        match *next {
-                            '0'..='9' | '.' => {
-                                number.push(character);
-                                self.characters.next();
-                            }
-                            _ => {
-                                return match number.parse() {
-                                    Ok(literal) => self.produce(TokenKind::Number {
-                                        lexeme: number,
-                                        literal,
-                                    }),
-                                    Err(_) => self.fail(ScannerError::InvalidNumber {
-                                        number,
-                                        line: self.current_line,
-                                    }),
-                                };
-                            }
-                        }
-                    }
                 }
 
                 other => {
@@ -230,7 +199,6 @@ pub enum TokenKind {
     Less,
     LessEqual,
     Minus,
-    Number { lexeme: String, literal: f64 },
     Plus,
     RightBrace,
     RightParenthesis,
@@ -271,13 +239,6 @@ impl fmt::Display for TokenKind {
             Self::Less => write!(formatter, "LESS < null"),
             Self::LessEqual => write!(formatter, "LESS_EQUAL <= null"),
             Self::Minus => write!(formatter, "MINUS - null"),
-            Self::Number { lexeme, literal } => {
-                if *literal == literal.trunc() {
-                    write!(formatter, "NUMBER {lexeme} {literal}.0")
-                } else {
-                    write!(formatter, "NUMBER {lexeme} {literal}")
-                }
-            }
             Self::Plus => write!(formatter, "PLUS + null"),
             Self::RightBrace => write!(formatter, "RIGHT_BRACE }} null"),
             Self::RightParenthesis => write!(formatter, "RIGHT_PAREN ) null"),
@@ -291,7 +252,6 @@ impl fmt::Display for TokenKind {
 
 #[derive(Debug, Clone)]
 pub enum ScannerError {
-    InvalidNumber { number: String, line: usize },
     UnexpectedCharacter { character: char, line: usize },
     UnexpectedEndOfFile { line: usize },
 }
@@ -299,9 +259,6 @@ pub enum ScannerError {
 impl fmt::Display for ScannerError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidNumber { number, line } => {
-                write!(formatter, "invalid number `{number}` on line {line}")
-            }
             Self::UnexpectedCharacter { character, line } => write!(
                 formatter,
                 "unexpected character `{character}` on line {line}"
