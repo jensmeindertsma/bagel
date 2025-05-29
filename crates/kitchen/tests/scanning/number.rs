@@ -9,7 +9,7 @@ fn integer() {
         &["scan", create_temporary_file("42").path().to_str().unwrap()],
     );
 
-    output.success().stdout(predicate::eq(indoc! {"
+    output.success().stdout(predicate::str::diff(indoc! {"
             NUMBER 42 42.0
             EOF  null
     "}));
@@ -25,7 +25,7 @@ fn decimal() {
         ],
     );
 
-    output.success().stdout(predicate::eq(indoc! {"
+    output.success().stdout(predicate::str::diff(indoc! {"
         NUMBER 1234.1234 1234.1234
         EOF  null
     "}));

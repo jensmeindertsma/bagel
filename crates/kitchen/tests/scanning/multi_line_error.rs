@@ -20,12 +20,12 @@ fn test() {
 
     output
         .code(predicate::eq(65))
-        .stdout(predicate::eq(indoc! {"
+        .stdout(predicate::str::diff(indoc! {"
             LEFT_PAREN ( null
             RIGHT_PAREN ) null
             EOF  null
     "}))
-        .stderr(predicate::eq(indoc! {"
+        .stderr(predicate::str::diff(indoc! {"
             [line 1] Error: Unexpected character: #
             [line 2] Error: Unexpected character: @
         "}));

@@ -12,7 +12,7 @@ fn test() {
         ],
     );
 
-    output.success().stdout(predicate::eq(indoc! {"
+    output.success().stdout(predicate::str::diff(indoc! {"
         LEFT_BRACE { null
         LEFT_BRACE { null
         RIGHT_BRACE } null
