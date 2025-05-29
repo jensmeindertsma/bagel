@@ -20,6 +20,7 @@ use std::env;
 // to disable ANSI escape sequences that add colors and bold/italic/underline font features.
 // Some terminals do not support these sequences so we allow it to be disabled. It is also
 // important to disable colors during testing, because the test cases expect plain output.
+// As such, we do it automatically for the CodeCrafters environment.
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Environment {
@@ -30,8 +31,11 @@ pub enum Environment {
 impl Environment {
     pub fn determine() -> (Self, Colorization) {
         match env::var("CODECRAFTERS") {
+            // CodeCrafters doesn't handle colors correctly
             Ok(value) if value == "yes" => (Self::Testing, Colorization::Disabled),
+
             _ => match env::var("COLORIZATION") {
+                // Only if explicitly disabled do we not print colors.
                 Ok(value) if value == "disabled" => (Self::Regular, Colorization::Disabled),
                 _ => (Self::Regular, Colorization::Enabled),
             },
