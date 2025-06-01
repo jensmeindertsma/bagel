@@ -7,13 +7,13 @@ clean:
   cargo clean
 
 check:
-  cargo clippy --all-targets
+  cargo clippy --workspace --all-targets
 
 format:
-  cargo fmt
+  cargo fmt --all
 
 format-ci:
-  cargo fmt --check
+  cargo fmt --all --check
 
 push:
   git push
