@@ -2,12 +2,16 @@ use std::{error::Error, fmt::Display, iter::Peekable, str::Chars};
 
 pub struct Scanner<'a> {
     characters: Peekable<Chars<'a>>,
+    current_line: usize,
+    offset: usize,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
             characters: input.chars().peekable(),
+            current_line: 1,
+            offset: 0,
         }
     }
 }
@@ -16,14 +20,19 @@ impl Iterator for Scanner<'_> {
     type Item = Result<Token, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        let kind = match self.characters.next().ok_or(ScannerError::UnexpectedEnd)? {
+            '(' => TokenKind::LeftParenthesis,
+            ')' => TokenKind::RightParenthesis,
+        };
+
+        self.offset += 1;
+
+        Some(Ok(Token { kind }))
     }
 }
 
 pub struct Token {
     kind: TokenKind,
-    start: usize,
-    end: usize,
 }
 
 impl Display for Token {
@@ -32,14 +41,45 @@ impl Display for Token {
     }
 }
 
-pub enum TokenKind {}
+pub enum TokenKind {
+    LeftParenthesis,
+    RightParenthesis,
+}
 
-#[derive(Debug)]
-pub enum ScannerError {}
+impl Display for TokenKind {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::LeftParenthesis => write!(formatter, "LEFT_PAREN ( null"),
+            Self::RightParenthesis => write!(formatter, "RIGHT_PAREN ) null"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScannerError {
+    line: usize,
+    start: usize,
+    end: usize,
+}
+
+pub enum ErrorKind {
+    UnexpectedCharacter { line: usize, character: char },
+    UnexpectedEnd { line: usize },
+}
 
 impl Display for ScannerError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "todo")
+        match self {
+            Self::UnexpectedCharacter { line, character } => {
+                write!(
+                    formatter,
+                    "[line {line}] Error: Unexpected character: {character}"
+                )
+            }
+            Self::UnexpectedEnd { line } => {
+                write!(formatter, "[line {line}: Unexpected end of input")
+            }
+        }
     }
 }
 
